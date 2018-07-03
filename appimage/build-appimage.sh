@@ -24,6 +24,8 @@
 
 # This script should be run from the root of the repository
 
+set -exuo pipefail
+
 if [ ! -f ./appimage/build-appimage.sh ]; then
     echo ""
     echo "You are attempting to run the build-appimage.sh from a wrong directory."
