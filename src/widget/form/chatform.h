@@ -68,6 +68,7 @@ signals:
 
 public slots:
     void startFileSend(ToxFile file);
+    void onFileTransferFinished(ToxFile file);
     void onFileRecvRequest(ToxFile file);
     void onAvInvite(uint32_t friendId, bool video);
     void onAvStart(uint32_t friendId, bool video);
