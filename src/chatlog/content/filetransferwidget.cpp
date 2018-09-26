@@ -332,7 +332,6 @@ void FileTransferWidget::updateWidgetText(ToxFile const& file)
     switch (file.status) {
     case ToxFile::INITIALIZING:
         if (file.direction == ToxFile::SENDING) {
-            showPreview(file.filePath);
             ui->progressLabel->setText(tr("Waiting to send...", "file transfer widget"));
         } else {
             ui->progressLabel->setText(tr("Accept to receive this file", "file transfer widget"));
@@ -352,6 +351,28 @@ void FileTransferWidget::updateWidgetText(ToxFile const& file)
     case ToxFile::FINISHED:
         break;
     }
+}
+
+void FileTransferWidget::updatePreview(ToxFile const& file)
+{
+    if (lastStatus == file.status)
+        return;
+
+    switch (file.status) {
+        case ToxFile::INITIALIZING:
+        case ToxFile::PAUSED:
+        case ToxFile::TRANSMITTING:
+        case ToxFile::BROKEN:
+        case ToxFile::CANCELED:
+            if (file.direction == ToxFile::SENDING) {
+                showPreview(file.filePath);
+            }
+            break;
+        case ToxFile::FINISHED:
+            showPreview(file.filePath);
+            break;
+    }
+
 }
 
 void FileTransferWidget::updateFileProgress(ToxFile const& file)
@@ -476,8 +497,6 @@ void FileTransferWidget::setupButtons(ToxFile const& file)
         ui->rightButton->setObjectName("dir");
         ui->rightButton->setToolTip(tr("Open file directory"));
         ui->rightButton->show();
-
-        showPreview(file.filePath);
 
         break;
     }
@@ -671,6 +690,7 @@ void FileTransferWidget::updateWidget(ToxFile const& file)
     // If we repainted on every packet our gui would be *very* slow
     bool bTransmitNeedsUpdate = fileProgress.needsUpdate();
 
+    updatePreview(file);
     updateFileProgress(file);
     updateWidgetText(file);
     updateWidgetColor(file);

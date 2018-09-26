@@ -61,6 +61,7 @@ protected:
     void updateWidgetText(ToxFile const& file);
     void updateFileProgress(ToxFile const& file);
     void updateSignals(ToxFile const& file);
+    void updatePreview(ToxFile const& file);
     void setupButtons(ToxFile const& file);
     void handleButton(QPushButton* btn);
     void showPreview(const QString& filename);
