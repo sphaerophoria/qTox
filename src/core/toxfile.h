@@ -1,6 +1,8 @@
 #ifndef CORESTRUCTS_H
 #define CORESTRUCTS_H
 
+#include "src/core/toxfilepause.h"
+
 #include <QString>
 #include <memory>
 
@@ -29,13 +31,6 @@ struct ToxFile
         RECEIVING = 1,
     };
 
-    enum PauseStatus {
-        NO_PAUSE = 0,
-        US_PAUSE = 1,
-        THEM_PAUSE = 2,
-        BOTH_PAUSE = 3
-    };
-
     ToxFile() = default;
     ToxFile(uint32_t FileNum, uint32_t FriendId, QByteArray FileName, QString filePath,
             FileDirection Direction);
@@ -58,7 +53,7 @@ struct ToxFile
     FileDirection direction;
     QByteArray avatarData;
     QByteArray resumeFileId;
-    int pauseStatus = NO_PAUSE;
+    ToxFilePause pauseStatus;
 };
 
 #endif // CORESTRUCTS_H

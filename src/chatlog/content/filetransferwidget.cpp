@@ -344,7 +344,7 @@ void FileTransferWidget::updateWidgetText(ToxFile const& file)
         break;
     case ToxFile::PAUSED:
         ui->etaLabel->setText("");
-        if (file.pauseStatus & ToxFile::US_PAUSE) {
+        if (file.pauseStatus.localPaused()) {
             ui->progressLabel->setText(tr("Paused", "file transfer widget"));
         } else {
             ui->progressLabel->setText(tr("Remote Paused", "file transfer widget"));
@@ -468,7 +468,7 @@ void FileTransferWidget::setupButtons(ToxFile const& file)
         break;
 
     case ToxFile::PAUSED:
-        if (file.pauseStatus & ToxFile::US_PAUSE) {
+        if (file.pauseStatus.localPaused()) {
             ui->leftButton->setIcon(QIcon(":/ui/fileTransferInstance/arrow_white.svg"));
             ui->leftButton->setObjectName("resume");
             ui->leftButton->setToolTip(tr("Resume transfer"));
