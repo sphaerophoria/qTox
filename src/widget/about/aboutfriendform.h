@@ -29,8 +29,8 @@ signals:
 
 private slots:
     void onAutoAcceptDirChanged(const QString& path);
+    void onAutoAcceptLevelChanged(const QString& levelStr);
     void onAcceptedClicked();
-    void onAutoAcceptClicked();
     void onAutoAcceptCallClicked();
     void onAutoGroupInvite();
     void onSelectDirClicked();

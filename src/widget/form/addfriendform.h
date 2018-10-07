@@ -22,6 +22,7 @@
 
 #include "src/core/toxid.h"
 
+#include <QComboBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
@@ -110,6 +111,7 @@ private:
     QVBoxLayout* requestsLayout;
     QList<QPushButton*> acceptButtons;
     QList<QPushButton*> rejectButtons;
+    QMap<QString, QComboBox*> pkToAutoAcceptLevelMap;
     QList<QString> contactsToImport;
 };
 

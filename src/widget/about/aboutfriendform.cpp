@@ -1,6 +1,7 @@
 #include "aboutfriendform.h"
 #include "ui_aboutfriendform.h"
 #include "src/core/core.h"
+#include "src/persistence/autoaccepttypes.h"
 #include "src/widget/gui.h"
 
 #include <QDesktopServices>
@@ -16,19 +17,18 @@ AboutFriendForm::AboutFriendForm(std::unique_ptr<IAboutFriend> _about, QWidget* 
     ui->label_4->hide();
     ui->aliases->hide();
 
-    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &AboutFriendForm::onAcceptedClicked);
-    connect(ui->autoacceptfile, &QCheckBox::clicked, this, &AboutFriendForm::onAutoAcceptClicked);
-    connect(ui->autoacceptcall, SIGNAL(activated(int)), this, SLOT(onAutoAcceptCallClicked(void)));
-    connect(ui->autogroupinvite, &QCheckBox::clicked, this, &AboutFriendForm::onAutoGroupInvite);
-    connect(ui->selectSaveDir, &QPushButton::clicked, this, &AboutFriendForm::onSelectDirClicked);
-    connect(ui->openDir, &QPushButton::clicked, this, &AboutFriendForm::onOpenDirClicked);
-    connect(ui->removeHistory, &QPushButton::clicked, this, &AboutFriendForm::onRemoveHistoryClicked);
-    connect(ui->resetSaveDir, &QPushButton::clicked, this, &AboutFriendForm::onResetSaveDirClicked);
-    about->connectTo_autoAcceptDirChanged([=](const QString& dir) { onAutoAcceptDirChanged(dir); });
-
-    ui->autoacceptfile->setChecked(about->getAutoAcceptEnable());
+    const QString dir = about->getAutoAcceptDir();
 
     ui->removeHistory->setEnabled(about->isHistoryExistence());
+
+    auto currentAutoAcceptLevel = about->getAutoAcceptFileLevel();
+    auto levels = {AutoAcceptFileLevel::None, AutoAcceptFileLevel::Small, AutoAcceptFileLevel::Any};
+    for (auto const& level : levels) {
+        ui->autoAcceptLevel->addItem(autoAcceptFileLevelStr(level));
+        if (level == currentAutoAcceptLevel) {
+            ui->autoAcceptLevel->setCurrentIndex(ui->autoAcceptLevel->count() - 1);
+        }
+    }
 
     const int index = static_cast<int>(about->getAutoAcceptCall());
     ui->autoacceptcall->setCurrentIndex(index);
@@ -45,6 +45,21 @@ AboutFriendForm::AboutFriendForm(std::unique_ptr<IAboutFriend> _about, QWidget* 
     ui->note->setPlainText(about->getNote());
     ui->statusMessage->setText(about->getStatusMessage());
     ui->avatar->setPixmap(about->getAvatar());
+
+    // Signals from connect calls seem to be triggered when we populate our UI
+    // elements, do not register them until everything is steady state
+    connect(ui->buttonBox, &QDialogButtonBox::accepted, this, &AboutFriendForm::onAcceptedClicked);
+    connect(ui->autoacceptcall, SIGNAL(activated(int)), this, SLOT(onAutoAcceptCallClicked(void)));
+    connect(ui->autogroupinvite, &QCheckBox::clicked, this, &AboutFriendForm::onAutoGroupInvite);
+    connect(ui->selectSaveDir, &QPushButton::clicked, this, &AboutFriendForm::onSelectDirClicked);
+    connect(ui->removeHistory, &QPushButton::clicked, this, &AboutFriendForm::onRemoveHistoryClicked);
+    connect(ui->autoAcceptLevel, &QComboBox::currentTextChanged, this,
+            &AboutFriendForm::onAutoAcceptLevelChanged);
+    about->connectTo_autoAcceptDirChanged([=](const QString& dir) { onAutoAcceptDirChanged(dir); });
+    connect(ui->openDir, &QPushButton::clicked, this, &AboutFriendForm::onOpenDirClicked);
+    connect(ui->resetSaveDir, &QPushButton::clicked, this, &AboutFriendForm::onResetSaveDirClicked);
+
+    ui->autoacceptfile->setChecked(about->getAutoAcceptEnable());
 }
 
 static QString getAutoAcceptDir(const QString& dir)
@@ -54,9 +69,10 @@ static QString getAutoAcceptDir(const QString& dir)
     return QFileDialog::getExistingDirectory(Q_NULLPTR, title, dir);
 }
 
-void AboutFriendForm::onAutoAcceptClicked()
+void AboutFriendForm::onAutoAcceptLevelChanged(const QString& levelStr)
 {
-    about->setAutoAcceptEnable(ui->autoacceptfile->isChecked());
+    AutoAcceptFileLevel level = strToAutoAcceptLevel(levelStr);
+    about->setAutoAcceptFileLevel(level);
 }
 
 void AboutFriendForm::onAutoAcceptDirChanged(const QString& path)

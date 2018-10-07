@@ -91,6 +91,18 @@ bool FriendChatroom::autoAcceptEnabled() const
     return Settings::getInstance().getAutoAcceptEnable(pk);
 }
 
+AutoAcceptFileLevel FriendChatroom::autoAcceptLevel() const
+{
+    const auto pk = frnd->getPublicKey();
+    return Settings::getInstance().getAutoAcceptFileLevel(pk);
+}
+
+void FriendChatroom::setAutoAcceptLevel(AutoAcceptFileLevel level)
+{
+    const auto pk = frnd->getPublicKey();
+    Settings::getInstance().setAutoAcceptFileLevel(pk, level);
+}
+
 void FriendChatroom::inviteFriend(const Group* group)
 {
     const auto friendId = frnd->getId();

@@ -11,9 +11,8 @@ AboutFriend::AboutFriend(const Friend* f, IFriendSettings* const s)
 {
     s->connectTo_contactNoteChanged(
         [=](const ToxPk& pk, const QString& note) { emit noteChanged(note); });
-    s->connectTo_autoAcceptCallChanged([=](const ToxPk& pk, AutoAcceptCallFlags flag) {
-        emit autoAcceptCallChanged(flag);
-    });
+    s->connectTo_autoAcceptCallChanged(
+        [=](const ToxPk& pk, AutoAcceptCallFlags flag) { emit autoAcceptCallChanged(flag); });
     s->connectTo_autoAcceptDirChanged(
         [=](const ToxPk& pk, const QString& dir) { emit autoAcceptDirChanged(dir); });
     s->connectTo_autoGroupInviteChanged(
@@ -53,6 +52,18 @@ void AboutFriend::setNote(const QString& note)
     const ToxPk pk = f->getPublicKey();
     settings->setContactNote(pk, note);
     settings->saveFriendSettings(pk);
+}
+
+AutoAcceptFileLevel AboutFriend::getAutoAcceptFileLevel()
+{
+    const ToxPk pk = f->getPublicKey();
+    return settings->getAutoAcceptFileLevel(pk);
+}
+
+void AboutFriend::setAutoAcceptFileLevel(AutoAcceptFileLevel level)
+{
+    const ToxPk pk = f->getPublicKey();
+    return settings->setAutoAcceptFileLevel(pk, level);
 }
 
 bool AboutFriend::getAutoAcceptEnable() const

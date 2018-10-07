@@ -185,6 +185,7 @@ signals:
     void currentProfileIdChanged(quint32 id);
     void enableLoggingChanged(bool enabled);
     void autoAwayTimeChanged(int minutes);
+    void autoAcceptLevelChanged(AutoAcceptFileLevel level);
     void globalAutoAcceptDirChanged(const QString& path);
     void autoAcceptMaxSizeChanged(size_t size);
     void checkUpdatesChanged(bool enabled);
@@ -430,6 +431,9 @@ public:
     QString getContactNote(const ToxPk& id) const override;
     void setContactNote(const ToxPk& id, const QString& note) override;
 
+    AutoAcceptFileLevel getAutoAcceptFileLevel(const ToxPk& pk) const override;
+    void setAutoAcceptFileLevel(const ToxPk& pk, AutoAcceptFileLevel level) override;
+
     QString getAutoAcceptDir(const ToxPk& id) const override;
     void setAutoAcceptDir(const ToxPk& id, const QString& dir) override;
 
@@ -507,8 +511,7 @@ public:
     void saveFriendSettings(const ToxPk& id) override;
     void removeFriendSettings(const ToxPk& id) override;
 
-    SIGNAL_IMPL(Settings, autoAcceptCallChanged, const ToxPk& id,
-                AutoAcceptCallFlags accept)
+    SIGNAL_IMPL(Settings, autoAcceptCallChanged, const ToxPk& id, AutoAcceptCallFlags accept)
     SIGNAL_IMPL(Settings, autoGroupInviteChanged, const ToxPk& id, bool accept)
     SIGNAL_IMPL(Settings, autoAcceptEnableChanged, const ToxPk& id, bool enable)
     SIGNAL_IMPL(Settings, autoAcceptDirChanged, const ToxPk& id, const QString& dir)
@@ -703,7 +706,7 @@ private:
         {}
         QString alias = "";
         QString addr = "";
-        bool autoAcceptEnabled = false;
+        AutoAcceptFileLevel autoAcceptLevel = AutoAcceptFileLevel::Unset;
         QString autoAcceptDir = "";
         QString note = "";
         int circleID = -1;

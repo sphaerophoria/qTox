@@ -28,6 +28,7 @@
 #include "src/widget/translator.h"
 #include <QApplication>
 #include <QClipboard>
+#include <QComboBox>
 #include <QErrorMessage>
 #include <QFileDialog>
 #include <QFont>
@@ -328,12 +329,22 @@ void AddFriendForm::onFriendRequestAccepted()
 {
     QPushButton* acceptButton = static_cast<QPushButton*>(sender());
     QWidget* friendWidget = acceptButton->parentWidget();
+
     const int index = requestsLayout->indexOf(friendWidget);
-    removeFriendRequestWidget(friendWidget);
     const int indexFromEnd = requestsLayout->count() - index - 1;
+
     const Settings::Request request = Settings::getInstance().getFriendRequest(indexFromEnd);
-    emit friendRequestAccepted(ToxId(request.address).getPublicKey());
+    auto pk = ToxId(request.address).getPublicKey();
+    auto autoAcceptLevel =
+        strToAutoAcceptLevel(pkToAutoAcceptLevelMap[request.address]->currentText());
+
+    emit friendRequestAccepted(pk);
+
+    removeFriendRequestWidget(friendWidget);
+    pkToAutoAcceptLevelMap.remove(request.address);
+
     Settings::getInstance().removeFriendRequest(indexFromEnd);
+    Settings::getInstance().setAutoAcceptFileLevel(pk, autoAcceptLevel);
     Settings::getInstance().savePersonal();
 }
 
@@ -341,9 +352,16 @@ void AddFriendForm::onFriendRequestRejected()
 {
     QPushButton* rejectButton = static_cast<QPushButton*>(sender());
     QWidget* friendWidget = rejectButton->parentWidget();
+
     const int index = requestsLayout->indexOf(friendWidget);
-    removeFriendRequestWidget(friendWidget);
     const int indexFromEnd = requestsLayout->count() - index - 1;
+
+    const Settings::Request request = Settings::getInstance().getFriendRequest(indexFromEnd);
+    auto pk = ToxId(request.address).getPublicKey();
+
+    removeFriendRequestWidget(friendWidget);
+    pkToAutoAcceptLevelMap.remove(request.address);
+
     Settings::getInstance().removeFriendRequest(indexFromEnd);
     Settings::getInstance().savePersonal();
 }
@@ -397,33 +415,49 @@ void AddFriendForm::addFriendRequestWidget(const QString& friendAddress, const Q
 {
     QWidget* friendWidget = new QWidget(tabWidget);
     QHBoxLayout* friendLayout = new QHBoxLayout(friendWidget);
-    QVBoxLayout* horLayout = new QVBoxLayout();
-    horLayout->setMargin(0);
-    friendLayout->addLayout(horLayout);
+    QVBoxLayout* requestLayout = new QVBoxLayout();
+    QVBoxLayout* interactionLayout = new QVBoxLayout();
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QHBoxLayout* autoAcceptLayout = new QHBoxLayout();
+    requestLayout->setMargin(0);
+    friendLayout->addLayout(requestLayout);
+    friendLayout->addLayout(interactionLayout);
+    interactionLayout->addLayout(buttonLayout);
+    interactionLayout->addLayout(autoAcceptLayout);
 
     CroppingLabel* friendLabel = new CroppingLabel(friendWidget);
     friendLabel->setTextInteractionFlags(Qt::TextBrowserInteraction);
     friendLabel->setText("<b>" + friendAddress + "</b>");
-    horLayout->addWidget(friendLabel);
+    requestLayout->addWidget(friendLabel);
 
     QLabel* messageLabel = new QLabel(message);
     // allow to select text, but treat links as plaintext to prevent phishing
     messageLabel->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
     messageLabel->setTextFormat(Qt::PlainText);
     messageLabel->setWordWrap(true);
-    horLayout->addWidget(messageLabel, 1);
+    requestLayout->addWidget(messageLabel, 1);
 
     QPushButton* acceptButton = new QPushButton(friendWidget);
     acceptButtons.append(acceptButton);
     connect(acceptButton, &QPushButton::released, this, &AddFriendForm::onFriendRequestAccepted);
-    friendLayout->addWidget(acceptButton);
+    buttonLayout->addWidget(acceptButton);
     retranslateAcceptButton(acceptButton);
 
     QPushButton* rejectButton = new QPushButton(friendWidget);
     rejectButtons.append(rejectButton);
     connect(rejectButton, &QPushButton::released, this, &AddFriendForm::onFriendRequestRejected);
-    friendLayout->addWidget(rejectButton);
+    buttonLayout->addWidget(rejectButton);
     retranslateRejectButton(rejectButton);
+
+    QLabel* autoAcceptLevelLabel = new QLabel(tr("Auto accept transfers: "));
+    autoAcceptLayout->addWidget(autoAcceptLevelLabel);
+
+    QComboBox* autoAcceptLevelDropdown = new QComboBox();
+    pkToAutoAcceptLevelMap.insert(friendAddress, autoAcceptLevelDropdown);
+    autoAcceptLevelDropdown->insertItem(0, autoAcceptFileLevelStr(AutoAcceptFileLevel::None));
+    autoAcceptLevelDropdown->insertItem(1, autoAcceptFileLevelStr(AutoAcceptFileLevel::Small));
+    autoAcceptLevelDropdown->insertItem(2, autoAcceptFileLevelStr(AutoAcceptFileLevel::Any));
+    autoAcceptLayout->addWidget(autoAcceptLevelDropdown);
 
     requestsLayout->insertWidget(0, friendWidget);
 }

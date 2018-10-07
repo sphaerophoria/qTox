@@ -338,14 +338,36 @@ void ChatForm::onFileRecvRequest(ToxFile file)
     FileTransferWidget* tfWidget = static_cast<FileTransferWidget*>(proxy->getWidget());
 
     const Settings& settings = Settings::getInstance();
-    const auto pk = f->getPublicKey();
-    const auto autoAcceptEnable = settings.getAutoAcceptEnable(pk) || settings.getAutoSaveEnabled();
+    const auto& pk = f->getPublicKey();
+    auto maxAutoAcceptSize = settings.getMaxAutoAcceptSize();
+
+    bool autoAcceptSizeCheckPassed;
+
+    switch (settings.getAutoAcceptFileLevel(pk)) {
+    case AutoAcceptFileLevel::None: {
+        autoAcceptSizeCheckPassed = false;
+        break;
+    }
+    case AutoAcceptFileLevel::Small: {
+        autoAcceptSizeCheckPassed = maxAutoAcceptSize == 0 || maxAutoAcceptSize >= file.filesize;
+        break;
+    }
+    case AutoAcceptFileLevel::Any: {
+        autoAcceptSizeCheckPassed = true;
+        break;
+    }
+    default: {
+        // This is a failure case in our logic. By this point we should have
+        // resolved *all* previously unset auto accept levels through settings
+        // upgrades
+        assert(false);
+        autoAcceptSizeCheckPassed = false;
+    }
+    }
+
     QString autoAcceptDir = settings.getAutoAcceptDir(pk);
 
-    auto maxAutoAcceptSize = settings.getMaxAutoAcceptSize();
-    bool autoAcceptSizeCheckPassed = maxAutoAcceptSize == 0 || maxAutoAcceptSize >= file.filesize;
-
-    if (autoAcceptEnable && autoAcceptSizeCheckPassed) {
+    if (autoAcceptSizeCheckPassed) {
         tfWidget->autoAcceptTransfer(autoAcceptDir);
     }
 

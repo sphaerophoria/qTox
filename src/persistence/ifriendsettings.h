@@ -4,7 +4,6 @@
 #include "src/model/interface.h"
 #include "src/persistence/autoaccepttypes.h"
 
-#include <QFlag>
 #include <QObject>
 
 class ToxPk;
@@ -14,6 +13,9 @@ class IFriendSettings
 public:
     virtual QString getContactNote(const ToxPk& pk) const = 0;
     virtual void setContactNote(const ToxPk& pk, const QString& note) = 0;
+
+    virtual AutoAcceptFileLevel getAutoAcceptFileLevel(const ToxPk& pk) const = 0;
+    virtual void setAutoAcceptFileLevel(const ToxPk& pk, AutoAcceptFileLevel level) = 0;
 
     virtual QString getAutoAcceptDir(const ToxPk& pk) const = 0;
     virtual void setAutoAcceptDir(const ToxPk& pk, const QString& dir) = 0;

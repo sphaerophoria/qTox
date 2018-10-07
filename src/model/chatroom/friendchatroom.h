@@ -21,6 +21,7 @@
 #define FRIEND_CHATROOM_H
 
 #include "chatroom.h"
+#include "src/persistence/ifriendsettings.h"
 
 #include <QObject>
 #include <QString>
@@ -64,6 +65,8 @@ public slots:
     void inviteFriend(const Group* group);
 
     bool autoAcceptEnabled() const;
+    AutoAcceptFileLevel autoAcceptLevel() const;
+    void setAutoAcceptLevel(AutoAcceptFileLevel level);
     QString getAutoAcceptDir() const;
     void setAutoAccept(bool enable);
     void setAutoAcceptDir(const QString& dir);

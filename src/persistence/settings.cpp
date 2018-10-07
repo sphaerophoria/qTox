@@ -405,6 +405,8 @@ void Settings::loadPersonal(Profile* profile)
             friendProp fp{ps.value("addr").toString()};
             fp.alias = ps.value("alias").toString();
             fp.note = ps.value("note").toString();
+            fp.autoAcceptLevel =
+                static_cast<AutoAcceptFileLevel>(ps.value("autoAcceptLevel", 0).toInt());
 
 
             auto newDefaultTransfersDir = defaultAutoAcceptDir(fp);
@@ -445,8 +447,15 @@ void Settings::loadPersonal(Profile* profile)
             autoAcceptDirUpgrader.addItem(ps, friendName, QString(), defaultAutoAcceptDir(fp),
                                           onSettingsUpgradeResponse);
 
-            fp.autoAcceptCall =
-                AutoAcceptCallFlags(QFlag(ps.value("autoAcceptCall", 0).toInt()));
+            if (fp.autoAcceptLevel == AutoAcceptFileLevel::Unset) {
+                if (fp.autoAcceptDir.isEmpty() && globalAutoAcceptDir.isEmpty()) {
+                    fp.autoAcceptLevel = AutoAcceptFileLevel::None;
+                } else {
+                    fp.autoAcceptLevel = AutoAcceptFileLevel::Any;
+                }
+            }
+
+            fp.autoAcceptCall = AutoAcceptCallFlags(QFlag(ps.value("autoAcceptCall", 0).toInt()));
             fp.autoGroupInvite = ps.value("autoGroupInvite").toBool();
             fp.circleID = ps.value("circle", -1).toInt();
 
@@ -727,7 +736,7 @@ void Settings::savePersonal(QString profileName, const ToxEncrypt* passkey)
             ps.setValue("addr", frnd.addr);
             ps.setValue("alias", frnd.alias);
             ps.setValue("note", frnd.note);
-            ps.setValue("autoAccept", frnd.autoAcceptEnabled);
+            ps.setValue("autoAccept", static_cast<int>(frnd.autoAcceptLevel));
             ps.setValue("autoAcceptDir", frnd.autoAcceptDir);
             // Unconditionally set to true since our old/new values share the same field
             ps.setValue("autoAcceptUpgraded", true);
@@ -1473,6 +1482,34 @@ void Settings::setAutoAwayTime(int newValue)
     if (newValue != autoAwayTime) {
         autoAwayTime = newValue;
         emit autoAwayTimeChanged(autoAwayTime);
+    }
+}
+
+AutoAcceptFileLevel Settings::getAutoAcceptFileLevel(const ToxPk& pk) const
+{
+    QMutexLocker locker{&bigLock};
+
+    auto it = friendLst.find(pk.getKey());
+    if (it != friendLst.end())
+        return it->autoAcceptLevel;
+
+    return AutoAcceptFileLevel::Unset;
+}
+
+void Settings::setAutoAcceptFileLevel(const ToxPk& pk, AutoAcceptFileLevel level)
+{
+    QMutexLocker locker{&bigLock};
+
+    auto it = friendLst.find(pk.getKey());
+    if (it == friendLst.end()) {
+        updateFriendAddress(pk.toString());
+        setAutoAcceptFileLevel(pk, level);
+        return;
+    }
+
+    if (it->autoAcceptLevel != level) {
+        it->autoAcceptLevel = level;
+        emit autoAcceptLevelChanged(level);
     }
 }
 

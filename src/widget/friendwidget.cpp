@@ -159,14 +159,28 @@ void FriendWidget::onContextMenuCalled(QContextMenuEvent* event)
     connect(setAlias, &QAction::triggered, nameLabel, &CroppingLabel::editBegin);
 
     menu.addSeparator();
-    auto autoAccept =
-        menu.addAction(tr("Auto accept files from this friend", "context menu entry"));
-    autoAccept->setCheckable(true);
-    autoAccept->setChecked(chatroom->autoAcceptEnabled());
+
+    auto autoAccept = menu.addAction(tr("Change auto accept directory...", "context menu entry"));
     connect(autoAccept, &QAction::triggered, this, &FriendWidget::changeAutoAccept);
 
-    auto autoAcceptDir = menu.addAction(tr("Change auto accept dir...", "context menu entry"));
-    connect(autoAcceptDir, &QAction::triggered, this, &FriendWidget::changeAutoAcceptDir);
+
+    auto autoAcceptLevelMenu = menu.addMenu(tr("Auto accept level"));
+
+    auto autoAcceptActionGroup = new QActionGroup(autoAcceptLevelMenu);
+    autoAcceptActionGroup->setExclusive(true);
+
+    auto autoAcceptLevels = {AutoAcceptFileLevel::None, AutoAcceptFileLevel::Small,
+                             AutoAcceptFileLevel::Any};
+
+    for (const auto& acceptLevel : autoAcceptLevels) {
+        const auto& acceptLevelStr = autoAcceptFileLevelStr(acceptLevel);
+        auto action = autoAcceptLevelMenu->addAction(tr(acceptLevelStr));
+        action->setActionGroup(autoAcceptActionGroup);
+        action->setCheckable(true);
+        action->setChecked(chatroom->autoAcceptLevel() == acceptLevel);
+        connect(action, &QAction::triggered, [=] { chatroom->setAutoAcceptLevel(acceptLevel); });
+    }
+
     menu.addSeparator();
 
     // TODO: move to model
