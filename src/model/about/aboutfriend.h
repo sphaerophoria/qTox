@@ -32,8 +32,8 @@ public:
     QString getAutoAcceptDir() const override;
     void setAutoAcceptDir(const QString& path) override;
 
-    IFriendSettings::AutoAcceptCallFlags getAutoAcceptCall() const override;
-    void setAutoAcceptCall(IFriendSettings::AutoAcceptCallFlags flag) override;
+    AutoAcceptCallFlags getAutoAcceptCall() const override;
+    void setAutoAcceptCall(AutoAcceptCallFlags flag) override;
 
     bool getAutoGroupInvite() const override;
     void setAutoGroupInvite(bool enabled) override;
@@ -49,7 +49,7 @@ public:
     SIGNAL_IMPL(AboutFriend, noteChanged, const QString&)
 
     SIGNAL_IMPL(AboutFriend, autoAcceptDirChanged, const QString&)
-    SIGNAL_IMPL(AboutFriend, autoAcceptCallChanged, IFriendSettings::AutoAcceptCallFlags)
+    SIGNAL_IMPL(AboutFriend, autoAcceptCallChanged, AutoAcceptCallFlags)
     SIGNAL_IMPL(AboutFriend, autoGroupInviteChanged, bool)
 
 private:

@@ -25,8 +25,8 @@ public:
     virtual QString getAutoAcceptDir() const = 0;
     virtual void setAutoAcceptDir(const QString& path) = 0;
 
-    virtual IFriendSettings::AutoAcceptCallFlags getAutoAcceptCall() const = 0;
-    virtual void setAutoAcceptCall(IFriendSettings::AutoAcceptCallFlags flag) = 0;
+    virtual AutoAcceptCallFlags getAutoAcceptCall() const = 0;
+    virtual void setAutoAcceptCall(AutoAcceptCallFlags flag) = 0;
 
     virtual bool getAutoGroupInvite() const = 0;
     virtual void setAutoGroupInvite(bool enabled) = 0;
@@ -43,7 +43,7 @@ public:
     DECLARE_SIGNAL(noteChanged, const QString&);
 
     DECLARE_SIGNAL(autoAcceptDirChanged, const QString&);
-    DECLARE_SIGNAL(autoAcceptCallChanged, IFriendSettings::AutoAcceptCallFlags);
+    DECLARE_SIGNAL(autoAcceptCallChanged, AutoAcceptCallFlags);
     DECLARE_SIGNAL(autoGroupInviteChanged, bool);
 };
 

@@ -446,7 +446,7 @@ void Settings::loadPersonal(Profile* profile)
                                           onSettingsUpgradeResponse);
 
             fp.autoAcceptCall =
-                Settings::AutoAcceptCallFlags(QFlag(ps.value("autoAcceptCall", 0).toInt()));
+                AutoAcceptCallFlags(QFlag(ps.value("autoAcceptCall", 0).toInt()));
             fp.autoGroupInvite = ps.value("autoGroupInvite").toBool();
             fp.circleID = ps.value("circle", -1).toInt();
 
@@ -1545,7 +1545,7 @@ void Settings::setAutoAcceptDir(const ToxPk& id, const QString& dir)
     }
 }
 
-Settings::AutoAcceptCallFlags Settings::getAutoAcceptCall(const ToxPk& id) const
+AutoAcceptCallFlags Settings::getAutoAcceptCall(const ToxPk& id) const
 {
     QMutexLocker locker{&bigLock};
 
@@ -1553,7 +1553,7 @@ Settings::AutoAcceptCallFlags Settings::getAutoAcceptCall(const ToxPk& id) const
     if (it != friendLst.end())
         return it->autoAcceptCall;
 
-    return Settings::AutoAcceptCallFlags();
+    return AutoAcceptCallFlags();
 }
 
 void Settings::setAutoAcceptCall(const ToxPk& id, AutoAcceptCallFlags accept)

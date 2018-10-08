@@ -70,7 +70,7 @@ void AboutFriendForm::onAutoAcceptDirChanged(const QString& path)
 void AboutFriendForm::onAutoAcceptCallClicked()
 {
     const int index = ui->autoacceptcall->currentIndex();
-    const IFriendSettings::AutoAcceptCallFlags flag{index};
+    const AutoAcceptCallFlags flag{index};
     about->setAutoAcceptCall(flag);
 }
 

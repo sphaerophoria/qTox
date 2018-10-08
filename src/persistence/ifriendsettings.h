@@ -2,6 +2,7 @@
 #define I_FRIEND_SETTINGS_H
 
 #include "src/model/interface.h"
+#include "src/persistence/autoaccepttypes.h"
 
 #include <QFlag>
 #include <QObject>
@@ -11,15 +12,6 @@ class ToxPk;
 class IFriendSettings
 {
 public:
-    enum class AutoAcceptCall
-    {
-        None = 0x00,
-        Audio = 0x01,
-        Video = 0x02,
-        AV = Audio | Video
-    };
-    Q_DECLARE_FLAGS(AutoAcceptCallFlags, AutoAcceptCall)
-
     virtual QString getContactNote(const ToxPk& pk) const = 0;
     virtual void setContactNote(const ToxPk& pk, const QString& note) = 0;
 
@@ -55,5 +47,4 @@ signals:
     DECLARE_SIGNAL(contactNoteChanged, const ToxPk& pk, const QString& note);
 };
 
-Q_DECLARE_OPERATORS_FOR_FLAGS(IFriendSettings::AutoAcceptCallFlags)
 #endif // I_FRIEND_SETTINGS_H

@@ -314,6 +314,7 @@ set(${PROJECT_NAME}_SOURCES
   src/nexus.h
   src/persistence/db/rawdatabase.cpp
   src/persistence/db/rawdatabase.h
+  src/persistence/autoaccepttypes.h
   src/persistence/history.cpp
   src/persistence/history.h
   src/persistence/ifriendsettings.h

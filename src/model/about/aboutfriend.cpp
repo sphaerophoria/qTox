@@ -11,7 +11,7 @@ AboutFriend::AboutFriend(const Friend* f, IFriendSettings* const s)
 {
     s->connectTo_contactNoteChanged(
         [=](const ToxPk& pk, const QString& note) { emit noteChanged(note); });
-    s->connectTo_autoAcceptCallChanged([=](const ToxPk& pk, IFriendSettings::AutoAcceptCallFlags flag) {
+    s->connectTo_autoAcceptCallChanged([=](const ToxPk& pk, AutoAcceptCallFlags flag) {
         emit autoAcceptCallChanged(flag);
     });
     s->connectTo_autoAcceptDirChanged(
@@ -81,13 +81,13 @@ void AboutFriend::setAutoAcceptDir(const QString& path)
     settings->saveFriendSettings(pk);
 }
 
-IFriendSettings::AutoAcceptCallFlags AboutFriend::getAutoAcceptCall() const
+AutoAcceptCallFlags AboutFriend::getAutoAcceptCall() const
 {
     const ToxPk pk = f->getPublicKey();
     return settings->getAutoAcceptCall(pk);
 }
 
-void AboutFriend::setAutoAcceptCall(IFriendSettings::AutoAcceptCallFlags flag)
+void AboutFriend::setAutoAcceptCall(AutoAcceptCallFlags flag)
 {
     const ToxPk pk = f->getPublicKey();
     settings->setAutoAcceptCall(pk, flag);

@@ -508,7 +508,7 @@ public:
     void removeFriendSettings(const ToxPk& id) override;
 
     SIGNAL_IMPL(Settings, autoAcceptCallChanged, const ToxPk& id,
-                IFriendSettings::AutoAcceptCallFlags accept)
+                AutoAcceptCallFlags accept)
     SIGNAL_IMPL(Settings, autoGroupInviteChanged, const ToxPk& id, bool accept)
     SIGNAL_IMPL(Settings, autoAcceptEnableChanged, const ToxPk& id, bool enable)
     SIGNAL_IMPL(Settings, autoAcceptDirChanged, const ToxPk& id, const QString& dir)
