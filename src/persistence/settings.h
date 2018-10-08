@@ -433,6 +433,9 @@ public:
     QString getAutoAcceptDir(const ToxPk& id) const override;
     void setAutoAcceptDir(const ToxPk& id, const QString& dir) override;
 
+    bool getAutoAcceptEnable(const ToxPk& id) const override;
+    void setAutoAcceptEnable(const ToxPk& id, bool enable) override;
+
     AutoAcceptCallFlags getAutoAcceptCall(const ToxPk& id) const override;
     void setAutoAcceptCall(const ToxPk& id, AutoAcceptCallFlags accept) override;
 
@@ -507,6 +510,7 @@ public:
     SIGNAL_IMPL(Settings, autoAcceptCallChanged, const ToxPk& id,
                 IFriendSettings::AutoAcceptCallFlags accept)
     SIGNAL_IMPL(Settings, autoGroupInviteChanged, const ToxPk& id, bool accept)
+    SIGNAL_IMPL(Settings, autoAcceptEnableChanged, const ToxPk& id, bool enable)
     SIGNAL_IMPL(Settings, autoAcceptDirChanged, const ToxPk& id, const QString& dir)
     SIGNAL_IMPL(Settings, contactNoteChanged, const ToxPk& id, const QString& note)
 
@@ -576,6 +580,8 @@ private:
     Settings& operator=(const Settings&) = delete;
     void savePersonal(QString profileName, const ToxEncrypt* passkey);
     friendProp& getOrInsertFriendPropRef(const ToxPk& id);
+    QString getDefaultTransfersDir() const;
+    QString defaultAutoAcceptDir(friendProp const& friendProp) const;
 
 public slots:
     void savePersonal(Profile* profile);
@@ -621,6 +627,10 @@ private:
     uint32_t currentProfileId;
 
     // Toxme Info
+    /**
+     * @var QString Settings::toxmeInfo
+     * @brief Toxme info like name@server
+     */
     QString toxmeInfo;
     QString toxmeBio;
     bool toxmePriv;
@@ -631,8 +641,8 @@ private:
     int autoAwayTime;
 
     QHash<QString, QByteArray> widgetSettings;
-    QHash<QString, QString> autoAccept;
     bool autoSaveEnabled;
+    bool defaultAutoAcceptDirV2Initialized;
     QString globalAutoAcceptDir;
     size_t autoAcceptMaxSize;
 
@@ -693,6 +703,7 @@ private:
         {}
         QString alias = "";
         QString addr = "";
+        bool autoAcceptEnabled = false;
         QString autoAcceptDir = "";
         QString note = "";
         int circleID = -1;
@@ -712,11 +723,6 @@ private:
     QVector<circleProp> circleLst;
 
     int themeColor;
-
-    static QMutex bigLock;
-    static Settings* settings;
-    static const QString globalSettingsFile;
-    static QThread* settingsThread;
 };
 
 #endif // SETTINGS_HPP
