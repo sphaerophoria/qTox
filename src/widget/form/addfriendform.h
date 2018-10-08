@@ -22,7 +22,6 @@
 
 #include "src/core/toxid.h"
 
-#include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
