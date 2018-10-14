@@ -70,7 +70,8 @@ FriendWidget::FriendWidget(std::shared_ptr<FriendChatroom> chatroom, bool compac
     connect(nameLabel, &CroppingLabel::editFinished, frnd, &Friend::setAlias);
     // update on changes of the displayed name
     connect(frnd, &Friend::displayedNameChanged, nameLabel, &CroppingLabel::setText);
-    connect(frnd, &Friend::displayedNameChanged, [this](const QString /* &newName */){emit friendWidgetRenamed(this);});
+    connect(frnd, &Friend::displayedNameChanged,
+            [this](const QString /* &newName */) { emit friendWidgetRenamed(this); });
     connect(chatroom.get(), &FriendChatroom::activeChanged, this, &FriendWidget::setActive);
     statusMessageLabel->setTextFormat(Qt::PlainText);
 }
@@ -161,7 +162,7 @@ void FriendWidget::onContextMenuCalled(QContextMenuEvent* event)
     menu.addSeparator();
 
     auto autoAccept = menu.addAction(tr("Change auto accept directory...", "context menu entry"));
-    connect(autoAccept, &QAction::triggered, this, &FriendWidget::changeAutoAccept);
+    connect(autoAccept, &QAction::triggered, this, &FriendWidget::changeAutoAcceptDir);
 
 
     auto autoAcceptLevelMenu = menu.addMenu(tr("Auto accept level"));
@@ -291,11 +292,6 @@ void FriendWidget::moveToCircle(int newCircleId)
         oldCircleWidget->updateStatus();
         Widget::getInstance()->searchCircle(oldCircleWidget);
     }
-}
-
-void FriendWidget::changeAutoAccept(bool enable)
-{
-    chatroom->setAutoAccept(enable);
 }
 
 void FriendWidget::changeAutoAcceptDir()

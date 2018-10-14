@@ -331,6 +331,7 @@ void AddFriendForm::onFriendRequestAccepted()
     QWidget* friendWidget = acceptButton->parentWidget();
 
     const int index = requestsLayout->indexOf(friendWidget);
+    removeFriendRequestWidget(friendWidget);
     const int indexFromEnd = requestsLayout->count() - index - 1;
 
     const Settings::Request request = Settings::getInstance().getFriendRequest(indexFromEnd);
@@ -340,7 +341,6 @@ void AddFriendForm::onFriendRequestAccepted()
 
     emit friendRequestAccepted(pk);
 
-    removeFriendRequestWidget(friendWidget);
     pkToAutoAcceptLevelMap.remove(request.address);
 
     Settings::getInstance().removeFriendRequest(indexFromEnd);

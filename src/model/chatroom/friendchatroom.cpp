@@ -79,18 +79,6 @@ void FriendChatroom::setAutoAcceptDir(const QString& dir)
     Settings::getInstance().setAutoAcceptDir(pk, dir);
 }
 
-void FriendChatroom::setAutoAccept(bool enable)
-{
-    const auto pk = frnd->getPublicKey();
-    Settings::getInstance().setAutoAcceptEnable(pk, enable);
-}
-
-bool FriendChatroom::autoAcceptEnabled() const
-{
-    const auto pk = frnd->getPublicKey();
-    return Settings::getInstance().getAutoAcceptEnable(pk);
-}
-
 AutoAcceptFileLevel FriendChatroom::autoAcceptLevel() const
 {
     const auto pk = frnd->getPublicKey();

@@ -64,11 +64,9 @@ public slots:
     void inviteToNewGroup();
     void inviteFriend(const Group* group);
 
-    bool autoAcceptEnabled() const;
     AutoAcceptFileLevel autoAcceptLevel() const;
     void setAutoAcceptLevel(AutoAcceptFileLevel level);
     QString getAutoAcceptDir() const;
-    void setAutoAccept(bool enable);
     void setAutoAcceptDir(const QString& dir);
 
     QVector<GroupToDisplay> getGroups() const;

@@ -437,9 +437,6 @@ public:
     QString getAutoAcceptDir(const ToxPk& id) const override;
     void setAutoAcceptDir(const ToxPk& id, const QString& dir) override;
 
-    bool getAutoAcceptEnable(const ToxPk& id) const override;
-    void setAutoAcceptEnable(const ToxPk& id, bool enable) override;
-
     AutoAcceptCallFlags getAutoAcceptCall(const ToxPk& id) const override;
     void setAutoAcceptCall(const ToxPk& id, AutoAcceptCallFlags accept) override;
 
@@ -513,7 +510,6 @@ public:
 
     SIGNAL_IMPL(Settings, autoAcceptCallChanged, const ToxPk& id, AutoAcceptCallFlags accept)
     SIGNAL_IMPL(Settings, autoGroupInviteChanged, const ToxPk& id, bool accept)
-    SIGNAL_IMPL(Settings, autoAcceptEnableChanged, const ToxPk& id, bool enable)
     SIGNAL_IMPL(Settings, autoAcceptDirChanged, const ToxPk& id, const QString& dir)
     SIGNAL_IMPL(Settings, contactNoteChanged, const ToxPk& id, const QString& note)
 

@@ -408,16 +408,8 @@ void Settings::loadPersonal(Profile* profile)
             fp.autoAcceptLevel =
                 static_cast<AutoAcceptFileLevel>(ps.value("autoAcceptLevel", 0).toInt());
 
-
             auto newDefaultTransfersDir = defaultAutoAcceptDir(fp);
             auto oldAutoAcceptDir = fp.autoAcceptDir = ps.value("autoAcceptDir").toString();
-
-            // Previously this was tied to the auto accept dir, from now on we manage this
-            // separately. This is because we now have a default autoaccept directory for each
-            // friend which is separate from whether or not we actually use it
-            // This allows us to enable/disable autoaccept and have the user use the default
-            // directory
-            fp.autoAcceptEnabled = ps.value("autoAccept", !oldAutoAcceptDir.isEmpty()).toBool();
 
             auto friendPk = ToxId(fp.addr).getPublicKey();
             auto friendName = Core::getInstance()->getPeerName(friendPk);
@@ -447,11 +439,23 @@ void Settings::loadPersonal(Profile* profile)
             autoAcceptDirUpgrader.addItem(ps, friendName, QString(), defaultAutoAcceptDir(fp),
                                           onSettingsUpgradeResponse);
 
+            // FIXME: Pull out into own fn
             if (fp.autoAcceptLevel == AutoAcceptFileLevel::Unset) {
-                if (fp.autoAcceptDir.isEmpty() && globalAutoAcceptDir.isEmpty()) {
-                    fp.autoAcceptLevel = AutoAcceptFileLevel::None;
+                auto oldAutoAccept = ps.value("autoAccept");
+                bool oldAutoAcceptSet = oldAutoAccept.isValid();
+                bool oldAutoAcceptValue = oldAutoAccept.toBool();
+                if (oldAutoAcceptSet) {
+                    if (oldAutoAcceptValue) {
+                        fp.autoAcceptLevel = AutoAcceptFileLevel::Any;
+                    } else {
+                        fp.autoAcceptLevel = AutoAcceptFileLevel::None;
+                    }
                 } else {
-                    fp.autoAcceptLevel = AutoAcceptFileLevel::Any;
+                    if (fp.autoAcceptDir.isEmpty() && globalAutoAcceptDir.isEmpty()) {
+                        fp.autoAcceptLevel = AutoAcceptFileLevel::None;
+                    } else {
+                        fp.autoAcceptLevel = AutoAcceptFileLevel::Any;
+                    }
                 }
             }
 
@@ -736,7 +740,7 @@ void Settings::savePersonal(QString profileName, const ToxEncrypt* passkey)
             ps.setValue("addr", frnd.addr);
             ps.setValue("alias", frnd.alias);
             ps.setValue("note", frnd.note);
-            ps.setValue("autoAccept", static_cast<int>(frnd.autoAcceptLevel));
+            ps.setValue("autoAcceptLevel", static_cast<int>(frnd.autoAcceptLevel));
             ps.setValue("autoAcceptDir", frnd.autoAcceptDir);
             // Unconditionally set to true since our old/new values share the same field
             ps.setValue("autoAcceptUpgraded", true);
@@ -1510,36 +1514,6 @@ void Settings::setAutoAcceptFileLevel(const ToxPk& pk, AutoAcceptFileLevel level
     if (it->autoAcceptLevel != level) {
         it->autoAcceptLevel = level;
         emit autoAcceptLevelChanged(level);
-    }
-}
-
-bool Settings::getAutoAcceptEnable(const ToxPk& id) const
-{
-    QMutexLocker locker{&bigLock};
-
-    auto it = friendLst.find(id.getKey());
-    if (it == friendLst.end()) {
-        return false;
-    }
-
-    return it->autoAcceptEnabled;
-}
-
-void Settings::setAutoAcceptEnable(const ToxPk& id, bool enable)
-{
-    QMutexLocker locker{&bigLock};
-
-    auto it = friendLst.find(id.getKey());
-
-    if (it == friendLst.end()) {
-        updateFriendAddress(id.toString());
-        setAutoAcceptEnable(id, enable);
-        return;
-    }
-
-    if (it->autoAcceptEnabled != enable) {
-        it->autoAcceptEnabled = enable;
-        emit autoAcceptEnableChanged(id, enable);
     }
 }
 

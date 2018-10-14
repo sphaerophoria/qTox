@@ -24,6 +24,7 @@
 #include <QString>
 
 #include <array>
+#include <cassert>
 
 enum class AutoAcceptCall
 {

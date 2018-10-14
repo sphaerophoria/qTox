@@ -58,8 +58,6 @@ AboutFriendForm::AboutFriendForm(std::unique_ptr<IAboutFriend> _about, QWidget* 
     about->connectTo_autoAcceptDirChanged([=](const QString& dir) { onAutoAcceptDirChanged(dir); });
     connect(ui->openDir, &QPushButton::clicked, this, &AboutFriendForm::onOpenDirClicked);
     connect(ui->resetSaveDir, &QPushButton::clicked, this, &AboutFriendForm::onResetSaveDirClicked);
-
-    ui->autoacceptfile->setChecked(about->getAutoAcceptEnable());
 }
 
 static QString getAutoAcceptDir(const QString& dir)

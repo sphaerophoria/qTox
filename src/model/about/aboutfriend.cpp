@@ -66,19 +66,6 @@ void AboutFriend::setAutoAcceptFileLevel(AutoAcceptFileLevel level)
     return settings->setAutoAcceptFileLevel(pk, level);
 }
 
-bool AboutFriend::getAutoAcceptEnable() const
-{
-    const ToxPk pk = f->getPublicKey();
-    return settings->getAutoAcceptEnable(pk);
-}
-
-void AboutFriend::setAutoAcceptEnable(bool enable)
-{
-    const ToxPk pk = f->getPublicKey();
-    settings->setAutoAcceptEnable(pk, enable);
-    settings->saveFriendSettings(pk);
-}
-
 QString AboutFriend::getAutoAcceptDir() const
 {
     const ToxPk pk = f->getPublicKey();
