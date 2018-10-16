@@ -89,10 +89,13 @@ private:
 private:
     QLabel headLabel;
     QLabel toxIdLabel;
+    QLabel autoAcceptLabel;
     QLabel messageLabel;
     QLabel importFileLabel;
     QLabel importMessageLabel;
 
+    QHBoxLayout autoAcceptLevelLayout;
+    QComboBox autoAcceptLevelComboBox;
     QPushButton sendButton;
     QPushButton importFileButton;
     QPushButton importSendButton;

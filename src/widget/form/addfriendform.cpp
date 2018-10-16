@@ -75,10 +75,18 @@ AddFriendForm::AddFriendForm()
     main->setLayout(&layout);
     layout.addWidget(&toxIdLabel);
     layout.addWidget(&toxId);
+    layout.addLayout(&autoAcceptLevelLayout);
     layout.addWidget(&messageLabel);
     layout.addWidget(&message);
     layout.addWidget(&sendButton);
     tabWidget->addTab(main, QString());
+
+    autoAcceptLabel.setText(tr("Auto accept level: "));
+    autoAcceptLevelComboBox.addItem(autoAcceptFileLevelStr(AutoAcceptFileLevel::None));
+    autoAcceptLevelComboBox.addItem(autoAcceptFileLevelStr(AutoAcceptFileLevel::Small));
+    autoAcceptLevelComboBox.addItem(autoAcceptFileLevelStr(AutoAcceptFileLevel::Any));
+    autoAcceptLevelLayout.addWidget(&autoAcceptLabel);
+    autoAcceptLevelLayout.addWidget(&autoAcceptLevelComboBox);
 
     importContacts = new QWidget(tabWidget);
     importContacts->setLayout(&importContactsLayout);
