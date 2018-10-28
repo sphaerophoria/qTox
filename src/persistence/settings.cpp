@@ -1504,15 +1504,10 @@ void Settings::setAutoAcceptFileLevel(const ToxPk& pk, AutoAcceptFileLevel level
 {
     QMutexLocker locker{&bigLock};
 
-    auto it = friendLst.find(pk.getKey());
-    if (it == friendLst.end()) {
-        updateFriendAddress(pk.toString());
-        setAutoAcceptFileLevel(pk, level);
-        return;
-    }
+    auto& frnd = getOrInsertFriendPropRef(pk);
 
-    if (it->autoAcceptLevel != level) {
-        it->autoAcceptLevel = level;
+    if (frnd.autoAcceptLevel != level) {
+        frnd.autoAcceptLevel = level;
         emit autoAcceptLevelChanged(level);
     }
 }

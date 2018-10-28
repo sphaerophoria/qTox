@@ -39,24 +39,23 @@
 #include <QTabWidget>
 #include <QWindow>
 
-namespace
+namespace {
+QString getToxId(const QString& id)
 {
-    QString getToxId(const QString& id)
-    {
-        const QString toxUriPrefix{"tox:"};
-        QString strippedId = id.trimmed();
-        if (strippedId.startsWith(toxUriPrefix)) {
-            strippedId.remove(0, toxUriPrefix.length());
-        }
-        return strippedId;
+    const QString toxUriPrefix{"tox:"};
+    QString strippedId = id.trimmed();
+    if (strippedId.startsWith(toxUriPrefix)) {
+        strippedId.remove(0, toxUriPrefix.length());
     }
-
-    bool checkIsValidId(const QString& id)
-    {
-        static const QRegularExpression dnsIdExpression("^\\S+@\\S+$");
-        return ToxId::isToxId(id) || id.contains(dnsIdExpression);
-    }
+    return strippedId;
 }
+
+bool checkIsValidId(const QString& id)
+{
+    static const QRegularExpression dnsIdExpression("^\\S+@\\S+$");
+    return ToxId::isToxId(id) || id.contains(dnsIdExpression);
+}
+} // namespace
 
 /**
  * @var QString AddFriendForm::lastUsername
@@ -175,6 +174,11 @@ QString AddFriendForm::getMessage() const
     return !msg.isEmpty() ? msg : message.placeholderText();
 }
 
+AutoAcceptFileLevel AddFriendForm::getLevel() const
+{
+    return strToAutoAcceptLevel(autoAcceptLevelComboBox.currentText());
+}
+
 QString AddFriendForm::getImportMessage() const
 {
     const QString msg = importMessage.toPlainText();
@@ -225,6 +229,7 @@ void AddFriendForm::addFriend(const QString& idText)
                          tr("You can't add yourself as a friend!"));
     } else {
         emit friendRequested(friendId, getMessage());
+        Settings::getInstance().setAutoAcceptFileLevel(friendId.getPublicKey(), getLevel());
     }
 }
 
@@ -302,8 +307,9 @@ void AddFriendForm::onIdChanged(const QString& id)
     const QString labelText =
         isValidId ? QStringLiteral("%1 (%2)") : QStringLiteral("%1 <font color='red'>(%2)</font>");
     toxIdLabel.setText(labelText.arg(toxIdText, toxIdComment));
-    toxId.setStyleSheet(isValidOrEmpty ? QStringLiteral("")
-                                  : QStringLiteral("QLineEdit { background-color: #FFC1C1; }"));
+    toxId.setStyleSheet(isValidOrEmpty
+                            ? QStringLiteral("")
+                            : QStringLiteral("QLineEdit { background-color: #FFC1C1; }"));
     toxId.setToolTip(isValidOrEmpty ? QStringLiteral("") : tr("Invalid Tox ID format"));
 
     sendButton.setEnabled(isValidId);

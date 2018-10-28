@@ -21,6 +21,7 @@
 #define ADDFRIENDFORM_H
 
 #include "src/core/toxid.h"
+#include "src/persistence/autoaccepttypes.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -84,6 +85,7 @@ private:
     void deleteFriendRequest(const ToxId& toxId);
     void setIdFromClipboard();
     QString getMessage() const;
+    AutoAcceptFileLevel getLevel() const;
     QString getImportMessage() const;
 
 private:
