@@ -47,6 +47,8 @@
 #include <QStyleFactory>
 #include <QThread>
 
+#include <cassert>
+
 /**
  * @var QHash<QString, QByteArray> Settings::widgetSettings
  * @brief Assume all widgets have unique names
@@ -420,20 +422,24 @@ void Settings::loadPersonal(Profile* profile)
 
             auto onSettingsUpgradeResponse =
                 [=](UpgradableSettingResponse<QString, QString> const& response) {
-                    auto savedFp = friendLst[ToxId(fp.addr).getPublicKey().getKey()];
+                    auto it = friendLst.find(ToxId(fp.addr).getPublicKey().getKey());
+                    if (it == friendLst.end()) {
+                        // We should have been guaranteed to insert this before we were called
+                        assert(false);
+                        return;
+                    }
+
                     if (response.isUpgraded()) {
-                        savedFp.autoAcceptDir = response.asNewType();
+                        it->autoAcceptDir = response.asNewType();
                     } else {
-                        savedFp.autoAcceptDir = response.asOldType();
+                        it->autoAcceptDir = response.asOldType();
                     }
 
-                    if (savedFp.autoAcceptDir.isEmpty()) {
-                        QDir().mkpath(defaultAutoAcceptDir(savedFp));
+                    if (it->autoAcceptDir.isEmpty()) {
+                        QDir().mkpath(defaultAutoAcceptDir(*it));
                     } else {
-                        QDir().mkpath(savedFp.autoAcceptDir);
+                        QDir().mkpath(it->autoAcceptDir);
                     }
-
-                    friendLst[ToxId(fp.addr).getPublicKey().getKey()] = savedFp;
                 };
 
             autoAcceptDirUpgrader.addItem(ps, friendName, QString(), defaultAutoAcceptDir(fp),
@@ -1532,7 +1538,7 @@ void Settings::setAutoAcceptDir(const ToxPk& id, const QString& dir)
     if (frnd.autoAcceptDir != dir) {
         frnd.autoAcceptDir = dir;
         if (dir.isEmpty()) {
-            emit autoAcceptDirChanged(id, defaultAutoAcceptDir(*it));
+            emit autoAcceptDirChanged(id, defaultAutoAcceptDir(frnd));
         } else {
             emit autoAcceptDirChanged(id, dir);
         }
