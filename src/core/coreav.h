@@ -47,6 +47,7 @@ public:
     using CoreAVPtr = std::unique_ptr<CoreAV>;
     static CoreAVPtr makeCoreAV(Tox* core);
 
+
     void setAudio(IAudioControl& newAudio);
     IAudioControl* getAudio();
 
@@ -132,9 +133,19 @@ private:
     std::unique_ptr<QThread> coreavThread;
     QTimer* iterateTimer = nullptr;
     using ToxFriendCallPtr = std::unique_ptr<ToxFriendCall>;
-    static std::map<uint32_t, ToxFriendCallPtr> calls;
+    /**
+     * @brief Maps friend IDs to ToxFriendCall.
+     * @note Need to use STL container here, because Qt containers need a copy constructor.
+     */
+    std::map<uint32_t, ToxFriendCallPtr> calls;
+
+
     using ToxGroupCallPtr = std::unique_ptr<ToxGroupCall>;
-    static std::map<int, ToxGroupCallPtr> groupCalls;
+    /**
+     * @brief Maps group IDs to ToxGroupCalls.
+     * @note Need to use STL container here, because Qt containers need a copy constructor.
+     */
+    std::map<int, ToxGroupCallPtr> groupCalls;
     std::atomic_flag threadSwitchLock;
 };
 
