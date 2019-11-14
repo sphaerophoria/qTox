@@ -128,8 +128,8 @@ ToxFriendCall::ToxFriendCall(uint32_t FriendNum, bool VideoEnabled, CoreAV& av, 
     // TODO(sudden6): move this to audio source
     audioInConn =
         QObject::connect(audioSource.get(), &IAudioSource::frameAvailable,
-                         [this](const int16_t* pcm, size_t samples, uint8_t chans, uint32_t rate) {
-                             this->av->sendCallAudio(this->friendId, pcm, samples, chans, rate);
+                         [this](const int16_t* pcm, size_t samples, uint8_t chans, uint32_t rate, QElapsedTimer timer) {
+                             this->av->sendCallAudio(this->friendId, pcm, samples, chans, rate, timer);
                          });
 
     audioSrcInvalid = QObject::connect(audioSource.get(), &IAudioSource::invalidated,
@@ -172,8 +172,8 @@ void ToxFriendCall::onAudioSourceInvalidated()
     auto newSrc = audio.makeSource();
     audioInConn =
         QObject::connect(newSrc.get(), &IAudioSource::frameAvailable,
-                         [this](const int16_t* pcm, size_t samples, uint8_t chans, uint32_t rate) {
-                             this->av->sendCallAudio(this->friendId, pcm, samples, chans, rate);
+                         [this](const int16_t* pcm, size_t samples, uint8_t chans, uint32_t rate, QElapsedTimer timer) {
+                             this->av->sendCallAudio(this->friendId, pcm, samples, chans, rate, timer);
                          });
     audioSource = std::move(newSrc);
 

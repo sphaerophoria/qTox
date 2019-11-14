@@ -27,6 +27,7 @@
 #include <QThread>
 #include <QWaitCondition>
 #include <QtMath>
+#include <QElapsedTimer>
 
 #include <cassert>
 
@@ -651,6 +652,8 @@ void OpenAL::stopActive()
  */
 void OpenAL::doInput()
 {
+    QElapsedTimer timer;
+    timer.start();
     ALint curSamples = 0;
     alcGetIntegerv(alInDev, ALC_CAPTURE_SAMPLES, sizeof(curSamples), &curSamples);
     if (curSamples < static_cast<ALint>(AUDIO_FRAME_SAMPLE_COUNT_PER_CHANNEL)) {
@@ -680,7 +683,7 @@ void OpenAL::doInput()
     // NOTE(sudden6): this loop probably doesn't scale too well with many sources
     for (auto source : sources) {
         emit source->frameAvailable(inputBuffer, AUDIO_FRAME_SAMPLE_COUNT_PER_CHANNEL, channels,
-                                    AUDIO_SAMPLE_RATE);
+                                    AUDIO_SAMPLE_RATE, timer);
     }
 }
 

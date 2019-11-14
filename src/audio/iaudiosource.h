@@ -20,6 +20,7 @@
 #ifndef IAUDIOSOURCE_H
 #define IAUDIOSOURCE_H
 
+#include <QElapsedTimer>
 #include <QObject>
 
 /**
@@ -40,7 +41,7 @@ public:
 
 signals:
     void frameAvailable(const int16_t* pcm, size_t sample_count, uint8_t channels,
-                        uint32_t sampling_rate);
+                        uint32_t sampling_rate, QElapsedTimer timer);
     void volumeAvailable(float value);
     void invalidated();
 };

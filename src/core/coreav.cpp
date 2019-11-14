@@ -29,6 +29,7 @@
 #include <QDebug>
 #include <QThread>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QtConcurrent/QtConcurrentRun>
 #include <cassert>
 
@@ -358,7 +359,7 @@ void CoreAV::timeoutCall(uint32_t friendNum)
  * @return False only on error, but not if there's nothing to send.
  */
 bool CoreAV::sendCallAudio(uint32_t callId, const int16_t* pcm, size_t samples, uint8_t chans,
-                           uint32_t rate) const
+                           uint32_t rate, QElapsedTimer timer) const
 {
     auto it = calls.find(callId);
     if (it == calls.end()) {
@@ -388,6 +389,12 @@ bool CoreAV::sendCallAudio(uint32_t callId, const int16_t* pcm, size_t samples, 
     if (err == TOXAV_ERR_SEND_FRAME_SYNC) {
         qDebug() << "toxav_audio_send_frame error: Lock busy, dropping frame";
     }
+
+    qDebug() << "Sending audio frame took " << timer.elapsed();
+
+
+    auto pThis = const_cast<CoreAV*>(this);
+    QMetaObject::invokeMethod(pThis, "process", Qt::AutoConnection);
 
     return true;
 }
@@ -861,6 +868,8 @@ void CoreAV::videoBitrateCallback(ToxAV* toxav, uint32_t friendNum, uint32_t rat
 void CoreAV::audioFrameCallback(ToxAV*, uint32_t friendNum, const int16_t* pcm, size_t sampleCount,
                                 uint8_t channels, uint32_t samplingRate, void* vSelf)
 {
+    QElapsedTimer timer;
+    timer.start();
     CoreAV* self = static_cast<CoreAV*>(vSelf);
     auto it = self->calls.find(friendNum);
     if (it == self->calls.end()) {
@@ -874,6 +883,7 @@ void CoreAV::audioFrameCallback(ToxAV*, uint32_t friendNum, const int16_t* pcm, 
     }
 
     call.playAudioBuffer(pcm, sampleCount, channels, samplingRate);
+    qDebug() << "Audio playback took" << timer.elapsed();
 }
 
 void CoreAV::videoFrameCallback(ToxAV*, uint32_t friendNum, uint16_t w, uint16_t h,

@@ -59,7 +59,7 @@ public:
     bool isCallActive(const Group* g) const;
     bool isCallVideoEnabled(const Friend* f) const;
     bool sendCallAudio(uint32_t friendNum, const int16_t* pcm, size_t samples, uint8_t chans,
-                       uint32_t rate) const;
+                       uint32_t rate, QElapsedTimer timer) const;
     void sendCallVideo(uint32_t friendNum, std::shared_ptr<VideoFrame> frame);
     bool sendGroupCallAudio(int groupNum, const int16_t* pcm, size_t samples, uint8_t chans,
                             uint32_t rate) const;
@@ -102,6 +102,7 @@ private slots:
                                 void* self);
     static void audioBitrateCallback(ToxAV* toxAV, uint32_t friendNum, uint32_t rate, void* self);
     static void videoBitrateCallback(ToxAV* toxAV, uint32_t friendNum, uint32_t rate, void* self);
+    void process();
 
 private:
     struct ToxAVDeleter
@@ -115,7 +116,6 @@ private:
     explicit CoreAV(std::unique_ptr<ToxAV, ToxAVDeleter> tox);
     void connectCallbacks(ToxAV& toxav);
 
-    void process();
     static void audioFrameCallback(ToxAV* toxAV, uint32_t friendNum, const int16_t* pcm,
                                    size_t sampleCount, uint8_t channels, uint32_t samplingRate,
                                    void* self);
