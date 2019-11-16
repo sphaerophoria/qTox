@@ -296,8 +296,8 @@ FileDbInsertionData::FileDbInsertionData()
  * @brief Prepares the database to work with the history.
  * @param db This database will be prepared for use with the history.
  */
-History::History(std::shared_ptr<RawDatabase> db)
-    : db(db)
+History::History(std::shared_ptr<RawDatabase> db_)
+    : db(db_)
 {
     if (!isValid()) {
         qWarning() << "Database not open, init failed";
