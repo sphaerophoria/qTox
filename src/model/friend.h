@@ -60,6 +60,7 @@ public:
     bool useHistory() const final;
 
     void setExtendedMessageSupport(bool supported);
+    void setSenderTimestampSupport(bool supported);
     ExtensionSet getSupportedExtensions() const;
 
 signals:

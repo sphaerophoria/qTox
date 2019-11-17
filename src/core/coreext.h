@@ -12,6 +12,7 @@
 struct Tox;
 struct ToxExt;
 struct ToxExtensionMessages;
+struct ToxExtensionSenderTimestamp;
 struct ToxExtPacketList;
 
 /**
@@ -65,6 +66,7 @@ public:
         Packet(
             ToxExtPacketList* packetList,
             ToxExtensionMessages* toxExtMessages,
+            ToxExtensionSenderTimestamp* toxExtSenderTimestamp,
             PacketPassKey);
 
         // Delete copy constructor, we shouldn't be able to copy
@@ -73,17 +75,25 @@ public:
         Packet(Packet&& other)
         {
             toxExtMessages = other.toxExtMessages;
+            toxExtSenderTimestamp = other.toxExtSenderTimestamp;
             packetList = other.packetList;
             other.toxExtMessages = nullptr;
+            other.toxExtSenderTimestamp = nullptr;
             other.packetList = nullptr;
         }
 
+         * Adds timestamp to message
+         */
+        void addSenderTimestamp(QDateTime now) override;
+
+        /**
         uint64_t addExtendedMessage(QString message) override;
 
         bool send() override;
     private:
         bool hasBeenSent = false;
         ToxExtensionMessages* toxExtMessages;
+        ToxExtensionSenderTimestamp* toxExtSenderTimestamp;
         ToxExtPacketList* packetList;
     };
 
@@ -92,7 +102,9 @@ public:
 signals:
     void extendedMessageReceived(uint32_t friendId, const QString& message);
     void extendedReceiptReceived(uint32_t friendId, uint64_t receiptId);
+    void senderTimestampReceived(uint32_t friendId, QDateTime timestamp);
     void extendedMessageSupport(uint32_t friendId, bool supported);
+    void senderTimestampSupport(uint32_t friendId, bool supported);
 
 public slots:
     void onFriendStatusChanged(uint32_t friendId, Status::Status status);
@@ -102,6 +114,9 @@ private:
     static void onExtendedMessageReceived(uint32_t friendId, const uint8_t* data, size_t size, void* userData);
     static void onExtendedMessageReceipt(uint32_t friendId, uint64_t receiptId, void* userData);
     static void onExtendedMessageNegotiation(uint32_t friendId, bool compatible, void* userData);
+
+    static void onSenderTimestampReceived(uint32_t friendId, uint64_t timestamp, void* userData);
+    static void onSenderTimestampNegotiation(uint32_t friendId, bool compatible, void* userData);
 
     // A little extra cost to hide the deleters, but this lets us fwd declare
     // and prevent any extension headers from leaking out to the rest of the
@@ -113,4 +128,5 @@ private:
 
     ExtensionPtr<ToxExt> toxExt;
     ExtensionPtr<ToxExtensionMessages> toxExtMessages;
+    ExtensionPtr<ToxExtensionSenderTimestamp> toxExtSenderTimestamp;
 };

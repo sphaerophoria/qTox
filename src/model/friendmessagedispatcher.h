@@ -47,6 +47,7 @@ public:
     void onReceiptReceived(ReceiptNum receipt);
     void onExtMessageReceived(const QString& message);
     void onExtReceiptReceived(uint64_t receiptId);
+    void onSenderTimestampReceived(const QDateTime& timestamp);
     void clearOutgoingMessages();
 private slots:
     void onFriendStatusChange(const ToxPk& key, Status::Status status);
@@ -64,6 +65,12 @@ private:
     ICoreFriendMessageSender& messageSender;
     OfflineMsgEngine offlineMsgEngine;
     MessageProcessor processor;
+
+    // Used to handle stateful processing of extended messages. Extended
+    // messages may send a bunch of messages before sending the message
+    // content. Receiving the message content marks the start of the next
+    // message
+    Message nextMessage;
 };
 
 

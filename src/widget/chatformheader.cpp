@@ -250,6 +250,10 @@ void ChatFormHeader::updateExtensionSupport(ExtensionSet extensions)
     hoverText += tr("Multipart Messages: ");
     hoverText += extensions[ExtensionType::messages] ? "✔" : "❌";
 
+    hoverText += "\n";
+    hoverText += tr("Sender Timstamp: ");
+    hoverText += extensions[ExtensionType::senderTimestamp] ? "✔" : "❌";
+
     auto pixmap = QIcon(iconName).pixmap(QSize(16, 16));
     extensionStatus->setPixmap(pixmap);
     extensionStatus->setToolTip(hoverText);

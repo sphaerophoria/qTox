@@ -691,7 +691,9 @@ void Widget::onCoreChanged(Core& core)
 
     connect(coreExt, &CoreExt::extendedMessageReceived, this, &Widget::onFriendExtMessageReceived);
     connect(coreExt, &CoreExt::extendedReceiptReceived, this, &Widget::onExtReceiptReceived);
+    connect(coreExt, &CoreExt::senderTimestampReceived, this, &Widget::onSenderTimestampReceived);
     connect(coreExt, &CoreExt::extendedMessageSupport, this, &Widget::onExtendedMessageSupport);
+    connect(coreExt, &CoreExt::senderTimestampSupport, this, &Widget::onSenderTimestampSupport);
 
     connect(this, &Widget::statusSet, &core, &Core::setStatus);
     connect(this, &Widget::friendRequested, &core, &Core::requestFriendship);
@@ -1459,6 +1461,28 @@ void Widget::onExtReceiptReceived(uint32_t friendNumber, uint64_t receiptId)
     }
 
     friendMessageDispatchers[f->getPublicKey()]->onExtReceiptReceived(receiptId);
+}
+
+void Widget::onSenderTimestampSupport(uint32_t friendNumber, bool compatible)
+{
+    const auto& friendKey = FriendList::id2Key(friendNumber);
+    Friend* f = FriendList::findFriend(friendKey);
+    if (!f) {
+        return;
+    }
+
+    f->setSenderTimestampSupport(compatible);
+}
+
+void Widget::onSenderTimestampReceived(uint32_t friendNumber, QDateTime timestamp)
+{
+    const auto& friendKey = FriendList::id2Key(friendNumber);
+    Friend* f = FriendList::findFriend(friendKey);
+    if (!f) {
+        return;
+    }
+
+    friendMessageDispatchers[f->getPublicKey()]->onSenderTimestampReceived(std::move(timestamp));
 }
 
 void Widget::addFriendDialog(const Friend* frnd, ContentDialog* dialog)

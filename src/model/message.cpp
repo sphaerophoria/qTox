@@ -69,6 +69,7 @@ std::vector<Message> MessageProcessor::processOutgoingMessage(bool isAction, QSt
                        message.isAction = isAction;
                        message.content = part;
                        message.timestamp = timestamp;
+                       message.senderTimestamp = timestamp;
                        // In theory we could limit this only to the extensions
                        // required but since Core owns the splitting logic it
                        // isn't trivial to do that now
@@ -119,14 +120,19 @@ Message MessageProcessor::processIncomingCoreMessage(bool isAction, QString cons
     return ret;
 }
 
-Message MessageProcessor::processIncomingExtMessage(const QString& content)
+Message MessageProcessor::processIncomingSenderTimestamp(const QDateTime& date, Message&& message)
+{
+    message.senderTimestamp = date;
+    return message;
+}
+
+Message MessageProcessor::processIncomingExtMessage(const QString& content, Message&& message)
 {
     // Note: detectingMentions not implemented here since mentions are only
     // currently useful in group messages which do not support extensions. If we
     // were to support mentions we would probably want to do something more
     // intelligent anyways
     assert(detectingMentions == false);
-    auto message = Message();
     message.timestamp = QDateTime::currentDateTime();
     message.content = content;
     message.extensionSet |= ExtensionType::messages;

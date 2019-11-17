@@ -38,6 +38,11 @@ public:
         , currentReceiptId(currentReceiptId)
     {}
 
+    void addSenderTimestamp(QDateTime now) override
+    {
+        senderTimestamp = now;
+    }
+
     uint64_t addExtendedMessage(QString message) override
     {
         this->message = message;
@@ -307,6 +312,7 @@ void TestFriendMessageDispatcher::testNegotiationSuccess()
     f->setStatus(Status::Status::Online);
 
     f->setExtendedMessageSupport(true);
+    f->setSenderTimestampSupport(true);
     f->onNegotiationComplete();
 
     friendMessageDispatcher->sendMessage(false, "test");

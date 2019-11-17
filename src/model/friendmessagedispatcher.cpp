@@ -26,6 +26,7 @@ FriendMessageDispatcher::FriendMessageDispatcher(Friend& f_, MessageProcessor pr
     : f(f_)
     , messageSender(messageSender_)
     , processor(std::move(processor_))
+    , nextMessage(Message())
     , coreExtPacketAllocator(coreExtPacketAllocator_)
 {
     connect(&f, &Friend::statusChanged, this, &FriendMessageDispatcher::onFriendStatusChange);
@@ -90,13 +91,20 @@ void FriendMessageDispatcher::onReceiptReceived(ReceiptNum receipt)
 
 void FriendMessageDispatcher::onExtMessageReceived(const QString& content)
 {
-    auto message = processor.processIncomingExtMessage(content);
-    emit this->messageReceived(f.getPublicKey(), message);
+    nextMessage = processor.processIncomingExtMessage(content, std::move(nextMessage));
+    emit this->messageReceived(f.getPublicKey(), nextMessage);
+    nextMessage = Message();
 }
 
 void FriendMessageDispatcher::onExtReceiptReceived(uint64_t receiptId)
 {
     offlineMsgEngine.onExtendedReceiptReceived(ExtendedReceiptNum(receiptId));
+}
+
+void FriendMessageDispatcher::onSenderTimestampReceived(const QDateTime& timestamp)
+{
+    // Only cache message as the sender timestamp refers to a future received extended message
+    nextMessage = processor.processIncomingSenderTimestamp(timestamp, std::move(nextMessage));
 }
 
 /**
@@ -155,6 +163,10 @@ void FriendMessageDispatcher::sendExtendedProcessedMessage(Message const& messag
 
     if (message.extensionSet[ExtensionType::messages]) {
         receipt.get() = packet->addExtendedMessage(message.content);
+    }
+
+    if (message.extensionSet[ExtensionType::senderTimestamp]) {
+        packet->addSenderTimestamp(message.senderTimestamp);
     }
 
     const auto messageSent = packet->send();

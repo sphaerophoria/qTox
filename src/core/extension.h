@@ -27,6 +27,7 @@ struct ExtensionType
 {
     enum {
         messages,
+        senderTimestamp,
         max
     };
 };

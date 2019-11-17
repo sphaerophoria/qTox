@@ -207,6 +207,12 @@ void Friend::setExtendedMessageSupport(bool supported)
     }
 }
 
+void Friend::setSenderTimestampSupport(bool supported)
+{
+    supportedExtensions[ExtensionType::senderTimestamp] = supported;
+    emit extensionSupportChanged(supportedExtensions);
+}
+
 ExtensionSet Friend::getSupportedExtensions() const
 {
     return supportedExtensions;

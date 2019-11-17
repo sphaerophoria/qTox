@@ -55,6 +55,7 @@ struct Message
     bool isAction;
     QString content;
     QDateTime timestamp;
+    QDateTime senderTimestamp;
     ExtensionSet extensionSet;
     std::vector<MessageMetadata> metadata;
 };
@@ -97,7 +98,8 @@ public:
 
     std::vector<Message> processOutgoingMessage(bool isAction, const QString& content, ExtensionSet extensions);
     Message processIncomingCoreMessage(bool isAction, const QString& content);
-    Message processIncomingExtMessage(const QString& content);
+    Message processIncomingSenderTimestamp(const QDateTime& date, Message&& message);
+    Message processIncomingExtMessage(const QString& content, Message&& message);
 
     /**
      * @brief Enables mention detection in the processor

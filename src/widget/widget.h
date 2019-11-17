@@ -176,6 +176,8 @@ public slots:
     void onExtendedMessageSupport(uint32_t friendNumber, bool supported);
     void onFriendExtMessageReceived(uint32_t friendNumber, const QString& message);
     void onExtReceiptReceived(uint32_t friendNumber, uint64_t receiptId);
+    void onSenderTimestampSupport(uint32_t friendNumber, bool supported);
+    void onSenderTimestampReceived(uint32_t friendNumber, QDateTime timestamp);
     void onFriendRequestReceived(const ToxPk& friendPk, const QString& message);
     void onFileReceiveRequested(const ToxFile& file);
     void onEmptyGroupCreated(uint32_t groupnumber, const GroupId& groupId, const QString& title);

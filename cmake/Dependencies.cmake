@@ -35,6 +35,7 @@ find_package(Qt5Xml           REQUIRED)
 
 find_package(ToxExt                         REQUIRED)
 find_package(ToxExtensionMessages           REQUIRED)
+find_package(ToxExtensionSenderTimestamp    REQUIRED)
 
 function(add_dependency)
   set(ALL_LIBRARIES ${ALL_LIBRARIES} ${ARGN} PARENT_SCOPE)
@@ -52,7 +53,8 @@ add_dependency(
 
 add_dependency(
   ToxExt::ToxExt
-  ToxExtensionMessages::ToxExtensionMessages)
+  ToxExtensionMessages::ToxExtensionMessages
+  ToxExtensionSenderTimestamp::ToxExtensionSenderTimestamp)
 
 include(CMakeParseArguments)
 include(Qt5CorePatches)

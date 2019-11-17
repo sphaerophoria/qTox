@@ -38,6 +38,10 @@ class ICoreExtPacket
 {
 public:
     virtual ~ICoreExtPacket() = default;
+    /**
+        * Adds timestamp to message
+        */
+    virtual void addSenderTimestamp(QDateTime now) = 0;
 
     /**
      * @brief Adds message to packet
