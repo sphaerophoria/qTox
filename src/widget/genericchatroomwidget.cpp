@@ -24,6 +24,7 @@
 #include "src/widget/tool/croppinglabel.h"
 #include <QBoxLayout>
 #include <QMouseEvent>
+#include <QQuickWidget>
 
 GenericChatroomWidget::GenericChatroomWidget(bool compact, QWidget* parent)
     : GenericChatItemWidget(compact, parent)
@@ -89,7 +90,7 @@ void GenericChatroomWidget::compactChange(bool _compact)
         mainLayout->addWidget(nameLabel);
         mainLayout->addWidget(statusMessageLabel);
         mainLayout->addSpacing(5);
-        mainLayout->addWidget(&statusPic);
+        mainLayout->addWidget(statusPic);
         mainLayout->addSpacing(5);
         mainLayout->activate();
         statusMessageLabel->setFont(Style::getFont(Style::Small));
@@ -106,7 +107,7 @@ void GenericChatroomWidget::compactChange(bool _compact)
         mainLayout->addSpacing(10);
         mainLayout->addLayout(textLayout);
         mainLayout->addSpacing(10);
-        mainLayout->addWidget(&statusPic);
+        mainLayout->addWidget(statusPic);
         mainLayout->addSpacing(10);
         mainLayout->activate();
         statusMessageLabel->setFont(Style::getFont(Style::Medium));

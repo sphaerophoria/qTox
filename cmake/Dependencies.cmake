@@ -32,6 +32,8 @@ find_package(Qt5Svg           REQUIRED)
 find_package(Qt5Test          REQUIRED)
 find_package(Qt5Widgets       REQUIRED)
 find_package(Qt5Xml           REQUIRED)
+find_package(Qt5Quick         REQUIRED)
+find_package(Qt5QuickWidgets  REQUIRED)
 
 function(add_dependency)
   set(ALL_LIBRARIES ${ALL_LIBRARIES} ${ARGN} PARENT_SCOPE)
@@ -45,7 +47,9 @@ add_dependency(
   Qt5::OpenGL
   Qt5::Svg
   Qt5::Widgets
-  Qt5::Xml)
+  Qt5::Xml
+  Qt5::Quick
+  Qt5::QuickWidgets)
 
 include(CMakeParseArguments)
 include(Qt5CorePatches)

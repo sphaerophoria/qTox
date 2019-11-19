@@ -47,6 +47,9 @@
 #include <QInputDialog>
 #include <QMenu>
 #include <QMimeData>
+#include <QQmlProperty>
+#include <QQuickItem>
+#include <QQuickWidget>
 
 #include <cassert>
 
@@ -63,8 +66,6 @@ FriendWidget::FriendWidget(std::shared_ptr<FriendChatroom> chatroom, bool compac
     , isDefaultAvatar{true}
 {
     avatar->setPixmap(QPixmap(":/img/contact.svg"));
-    statusPic.setPixmap(QPixmap(Status::getIconPath(Status::Status::Offline)));
-    statusPic.setMargin(3);
 
     auto frnd = chatroom->getFriend();
     nameLabel->setText(frnd->getDisplayedName());
@@ -316,7 +317,13 @@ void FriendWidget::updateStatusLight()
 {
     const auto frnd = chatroom->getFriend();
     const bool event = frnd->getEventFlag();
-    statusPic.setPixmap(QPixmap(Status::getIconPath(frnd->getStatus(), event)));
+
+    auto statusPicObject = statusPic->rootObject();
+    QQmlProperty::write(statusPicObject, "toxStatus", static_cast<int>(frnd->getStatus()));
+    QQmlProperty::write(statusPicObject, "newMessage", event);
+
+    qDebug() << "Updated with status " << frnd->getStatus() << " and event " << event;
+
 
     if (event) {
         const Settings& s = Settings::getInstance();
@@ -328,8 +335,6 @@ void FriendWidget::updateStatusLight()
 
         emit updateFriendActivity(*frnd);
     }
-
-    statusPic.setMargin(event ? 1 : 3);
 }
 
 QString FriendWidget::getStatusString() const

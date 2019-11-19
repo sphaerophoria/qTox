@@ -25,6 +25,8 @@
 
 namespace Status
 {
+    Q_NAMESPACE
+
     // Status::Status is weird, but Status is a fitting name for both the namespace and enum class..
     enum class Status
     {
@@ -34,6 +36,7 @@ namespace Status
         Offline,
         Blocked
     };
+    Q_ENUM_NS(Status);
 
     QString getIconPath(Status status, bool event = false);
     QString getTitle(Status status);

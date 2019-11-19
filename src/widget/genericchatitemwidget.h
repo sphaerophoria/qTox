@@ -22,8 +22,10 @@
 
 #include <QFrame>
 #include <QLabel>
+#include <QQmlComponent>
 
 class CroppingLabel;
+class QQuickWidget;
 
 class GenericChatItemWidget : public QFrame
 {
@@ -49,7 +51,7 @@ public:
 
 protected:
     CroppingLabel* nameLabel;
-    QLabel statusPic;
+    QQuickWidget* statusPic;
 
 private:
     bool compact;

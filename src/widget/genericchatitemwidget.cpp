@@ -22,6 +22,23 @@
 #include "src/widget/style.h"
 #include "src/widget/tool/croppinglabel.h"
 #include <QVariant>
+#include <QQuickWidget>
+
+namespace
+{
+static QQuickWidget* getStatusPicWidget(QWidget* parent = nullptr)
+{
+    auto widget = new QQuickWidget(parent);
+    widget->setSource(QUrl::fromLocalFile(":/qml/statuspic.qml"));
+    widget->setAttribute(Qt::WA_AlwaysStackOnTop);
+    widget->setClearColor(Qt::transparent);
+    widget->setResizeMode(QQuickWidget::SizeRootObjectToView);
+    widget->setGeometry(0, 0, 20, 20);
+    widget->show();
+    return widget;
+}
+}
+
 
 GenericChatItemWidget::GenericChatItemWidget(bool compact, QWidget* parent)
     : QFrame(parent)
@@ -32,6 +49,8 @@ GenericChatItemWidget::GenericChatItemWidget(bool compact, QWidget* parent)
     nameLabel = new CroppingLabel(this);
     nameLabel->setObjectName("name");
     nameLabel->setTextFormat(Qt::PlainText);
+
+    statusPic = getStatusPicWidget(this);
 }
 
 bool GenericChatItemWidget::isCompact() const
