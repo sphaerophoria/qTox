@@ -445,7 +445,7 @@ bool ContentDialog::event(QEvent* event)
 
             updateTitleAndStatusIcon();
 
-            const Friend* frnd = activeChatroomWidget->getFriend();
+            Friend* frnd = const_cast<Friend*>(activeChatroomWidget->getFriend());
             Group* group = activeChatroomWidget->getGroup();
 
             if (frnd) {

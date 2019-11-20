@@ -25,6 +25,7 @@
 #include "src/model/status.h"
 #include "src/persistence/settings.h"
 #include <QWidget>
+#include <QQuickWidget>
 
 class QVBoxLayout;
 class QGridLayout;
@@ -38,7 +39,7 @@ class GenericChatroomWidget;
 class CategoryWidget;
 class Friend;
 
-class FriendListWidget : public QWidget
+class FriendListWidget : public QQuickWidget
 {
     Q_OBJECT
 public:
@@ -49,7 +50,7 @@ public:
     SortingMode getMode() const;
 
     void addGroupWidget(GroupWidget* widget);
-    void addFriendWidget(FriendWidget* w, Status::Status s, int circleIndex);
+    void addFriendWidget(FriendWidget* w, ::Status::Status s, int circleIndex);
     void removeGroupWidget(GroupWidget* w);
     void removeFriendWidget(FriendWidget* w);
     void addCircleWidget(int id);
@@ -62,18 +63,20 @@ public:
 
     void updateActivityTime(const QDateTime& date);
     void reDraw();
+    void setUnselected();
 
 signals:
     void onCompactChanged(bool compact);
     void connectCircleWidget(CircleWidget& circleWidget);
     void searchCircle(CircleWidget& circleWidget);
+    void friendSelected(Friend* f);
 
 public slots:
     void renameGroupWidget(GroupWidget* groupWidget, const QString& newName);
     void renameCircleWidget(CircleWidget* circleWidget, const QString& newName);
     void onFriendWidgetRenamed(FriendWidget* friendWidget);
     void onGroupchatPositionChanged(bool top);
-    void moveWidget(FriendWidget* w, Status::Status s, bool add = false);
+    void moveWidget(FriendWidget* w, ::Status::Status s, bool add = false);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -81,21 +84,10 @@ protected:
 
 private slots:
     void dayTimeout();
+    void onFriendSelected(QVariant f);
 
 private:
-    CircleWidget* createCircleWidget(int id = -1);
-    QLayout* nextLayout(QLayout* layout, bool forward) const;
-    void moveFriends(QLayout* layout);
-    CategoryWidget* getTimeCategoryWidget(const Friend* frd) const;
-    void sortByMode(SortingMode mode);
-
-    SortingMode mode;
-    bool groupsOnTop;
-    FriendListLayout* listLayout;
-    GenericChatItemLayout* circleLayout = nullptr;
-    GenericChatItemLayout groupLayout;
-    QVBoxLayout* activityLayout = nullptr;
-    QTimer* dayTimer;
+    QList<QObject*> model;
 };
 
 #endif // FRIENDLISTWIDGET_H

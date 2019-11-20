@@ -188,7 +188,7 @@ public slots:
     void onFriendTypingChanged(uint32_t friendnumber, bool isTyping);
     void nextContact();
     void previousContact();
-    void onFriendDialogShown(const Friend* f);
+    void onFriendDialogShown(Friend* f);
     void onGroupDialogShown(Group* g);
     void toggleFullscreen();
     void refreshPeerListsLocal(const QString& username);
@@ -211,8 +211,8 @@ private slots:
     void onGroupClicked();
     void onTransferClicked();
     void showProfile();
-    void openNewDialog(GenericChatroomWidget* widget);
-    void onChatroomWidgetClicked(GenericChatroomWidget* widget);
+    void openNewDialog(Contact* contact);
+    void onChatroomWidgetClicked(Contact* contact);
     void onStatusMessageChanged(const QString& newStatusMessage);
     void removeFriend(const ToxPk& friendId);
     void copyFriendIdToClipboard(const ToxPk& friendId);
@@ -230,7 +230,7 @@ private slots:
     void friendRequestsUpdate();
     void groupInvitesUpdate();
     void groupInvitesClear();
-    void onDialogShown(GenericChatroomWidget* widget);
+    void onDialogShown(Contact* contact);
     void outgoingNotification();
     void onCallEnd();
     void incomingNotification(uint32_t friendId);
@@ -239,9 +239,6 @@ private slots:
     void dispatchFile(ToxFile file);
     void dispatchFileWithBool(ToxFile file, bool);
     void dispatchFileSendFailed(uint32_t friendId, const QString& fileName);
-    void connectCircleWidget(CircleWidget& circleWidget);
-    void connectFriendWidget(FriendWidget& friendWidget);
-    void searchCircle(CircleWidget& circleWidget);
     void updateFriendActivity(const Friend& frnd);
     void registerContentDialog(ContentDialog& contentDialog) const;
 
@@ -256,7 +253,7 @@ private:
 
     bool newMessageAlert(QWidget* currentWindow, bool isActive, bool sound = true, bool notify = true);
     void setActiveToolMenuButton(ActiveToolMenuButton newActiveButton);
-    void hideMainForms(GenericChatroomWidget* chatroomWidget);
+    void hideMainForms(Contact* chatroomWidget);
     Group* createGroup(uint32_t groupnumber, const GroupId& groupId);
     void removeFriend(Friend* f, bool fake = false);
     void removeGroup(Group* g, bool fake = false);
@@ -272,7 +269,7 @@ private:
     static bool filterOffline(FilterCriteria index);
     void retranslateUi();
     void focusChatInput();
-    void openDialog(GenericChatroomWidget* widget, bool newWindow);
+    void openDialog(Contact* contact, bool newWindow);
     void playNotificationSound(IAudioSink::Sound sound, bool loop = false);
     void cleanupNotificationSound();
 
@@ -313,7 +310,7 @@ private:
     std::unique_ptr<UpdateCheck> updateCheck; // ownership should be moved outside Widget once non-singleton
     FilesForm* filesForm;
     static Widget* instance;
-    GenericChatroomWidget* activeChatroomWidget;
+    Contact* activeContact;
     FriendListWidget* contactListWidget;
     MaskablePixmapWidget* profilePicture;
     bool notify(QObject* receiver, QEvent* event);
@@ -331,7 +328,6 @@ private:
     std::unique_ptr<IAudioSink> audioNotification = nullptr;
     Settings& settings;
 
-    QMap<ToxPk, FriendWidget*> friendWidgets;
     // Shared pointer because qmap copies stuff all over the place
     QMap<ToxPk, std::shared_ptr<FriendMessageDispatcher>> friendMessageDispatchers;
     // Stop gap method of linking our friend messages back to a group id.
@@ -343,7 +339,6 @@ private:
     QMap<ToxPk, std::shared_ptr<FriendChatroom>> friendChatrooms;
     QMap<ToxPk, ChatForm*> chatForms;
 
-    QMap<GroupId, GroupWidget*> groupWidgets;
     QMap<GroupId, std::shared_ptr<GroupMessageDispatcher>> groupMessageDispatchers;
 
     // Stop gap method of linking our group messages back to a group id.

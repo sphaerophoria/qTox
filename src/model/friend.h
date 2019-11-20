@@ -31,6 +31,10 @@
 class Friend : public Contact
 {
     Q_OBJECT
+    Q_PROPERTY(Status::Status status READ getStatus NOTIFY statusChanged);
+    Q_PROPERTY(QString statusMessage READ getStatusMessage NOTIFY statusMessageChanged);
+    Q_PROPERTY(QString name READ getDisplayedName NOTIFY nameChanged);
+
 public:
     Friend(uint32_t friendId, const ToxPk& friendPk, const QString& userAlias = {}, const QString &userName = {});
     Friend(const Friend& other) = delete;

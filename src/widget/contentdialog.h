@@ -77,7 +77,7 @@ public:
     void setStatusMessage(const ToxPk& friendPk, const QString& message);
 
 signals:
-    void friendDialogShown(const Friend* f);
+    void friendDialogShown(Friend* f);
     void groupDialogShown(Group* g);
     void addFriendDialog(Friend* frnd, ContentDialog* contentDialog);
     void addGroupDialog(Group* group, ContentDialog* contentDialog);
