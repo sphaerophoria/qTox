@@ -1,5 +1,5 @@
 [Chatroom|
-Possibly abstraction around actions 
+Possibly abstraction around actions
 usable from the context menu??
 ]
 
@@ -11,7 +11,7 @@ usable from the context menu??
 ]
 
 [GroupChatroom|
-Seems to have support items for friend 
+Seems to have support items for friend
 context menus as well...
 
 * eventFlags
@@ -40,5 +40,15 @@ context menus as well...
 [GenericChatroomWidget] <:- [FriendWidget]
 [GenericChatroomWidget] <:- [GroupWidget]
 [GenericChatItemWidget] <:- [GenericChatroomWidget]
+[GenericChatItemWidget] <:- [CategoryWidget]
+[CategoryWidget] <:- [CircleWidget]
 
 [ContentDialog] o-.. [GenericChatroomWidget]
+
+
+[FriendListWidget] o- [FriendListLayout]
+[FriendListWidget] o-.. [GenericChatItemLayout]
+
+[GenericChatItemLayout] o-.. [GenericChatItemWidget]
+
+[FriendListLayout] o-.. [FriendWidget]

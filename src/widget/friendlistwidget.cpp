@@ -39,25 +39,29 @@
 #include <QTimer>
 #include <cassert>
 
-namespace
+class ObjectNameRetriever : public QObject
 {
-    QVariant getFriendList()
-    {
-        auto input = FriendList::getAllFriends();
-        QList<QObject*> output;
+    Q_OBJECT
 
-        std::transform( input.begin(), input.end(), std::back_inserter(output), [] ( Friend* f) {
-            return static_cast<QObject*>(f);
-        });
-
-        return QVariant::fromValue(output);
+public:
+    ObjectNameRetriever(QObject* parent = nullptr)
+        : QObject(parent)
+    {}
+public slots:
+    QString getClassName(QObject* obj) const {
+        return obj ? obj->metaObject()->className(): "";
     }
-}
+};
 
 FriendListWidget::FriendListWidget(Widget* parent, bool groupsOnTop)
     : QQuickWidget(parent)
 {
-    rootContext()->setContextProperty("friendListModel", getFriendList());
+    updateModelContents();
+
+    auto objectNameRetriever = new ObjectNameRetriever(this);
+
+    auto ctxt = rootContext();
+    ctxt->setContextProperty("objectNameRetriever", objectNameRetriever);
 
     setSource(QUrl::fromLocalFile("../qml/FriendListWidget.qml"));
     setAttribute(Qt::WA_AlwaysStackOnTop);
@@ -83,13 +87,28 @@ FriendListWidget::SortingMode FriendListWidget::getMode() const
     return FriendListWidget::SortingMode::Name;
 }
 
-void FriendListWidget::addGroupWidget(GroupWidget* widget)
+void FriendListWidget::addGroupWidget(Group* g)
 {
+    if (std::find(groups.begin(), groups.end(), g) != groups.end()) {
+        qWarning() << "Adding duplicate friend to friendlist";
+        return;
+    }
+
+    groups.push_back(g);
+
+    updateModelContents();
 }
 
-void FriendListWidget::addFriendWidget(FriendWidget* w, ::Status::Status s, int circleIndex)
+void FriendListWidget::addFriendWidget(Friend* f, ::Status::Status s, int circleIndex)
 {
-    rootContext()->setContextProperty("friendListModel", getFriendList());
+    if (std::find(friends.begin(), friends.end(), f) != friends.end()) {
+        qWarning() << "Adding duplicate friend to friendlist";
+        return;
+    }
+
+    friends.push_back(f);
+
+    updateModelContents();
 }
 
 void FriendListWidget::removeGroupWidget(GroupWidget* w)
@@ -98,7 +117,6 @@ void FriendListWidget::removeGroupWidget(GroupWidget* w)
 
 void FriendListWidget::removeFriendWidget(FriendWidget* w)
 {
-    rootContext()->setContextProperty("friendListModel", getFriendList());
 }
 
 void FriendListWidget::addCircleWidget(int id)
@@ -166,11 +184,41 @@ void FriendListWidget::reDraw()
 void FriendListWidget::onFriendSelected(QVariant f_)
 {
     Friend* f = f_.value<Friend*>();
-    qDebug() << "Selected friend " << f->getDisplayedName();
-    emit friendSelected(f);
+    if (f) {
+        qDebug() << "Selected friend " << f->getDisplayedName();
+        emit friendSelected(f);
+    }
+
+    Group* g = f_.value<Group*>();
+    if (g) {
+        qDebug() << "Selected group " << g->getDisplayedName();
+        emit groupSelected(g);
+    }
+
 }
 
 void FriendListWidget::setUnselected()
 {
 
 }
+
+void FriendListWidget::updateModelContents()
+{
+    QList<QObject*> contents;
+
+    std::transform(friends.begin(), friends.end(), std::back_inserter(contents),
+        [] (Friend* f) {
+            return static_cast<QObject*>(f);
+        });
+
+    std::transform(groups.begin(), groups.end(), std::back_inserter(contents),
+        [] (Group* g) {
+            qDebug() << "Adding group " << g;
+            return static_cast<QObject*>(g);
+        });
+
+    auto ctxt = rootContext();
+    ctxt->setContextProperty("friendListModel", QVariant::fromValue(contents));
+}
+
+#include "friendlistwidget.moc"

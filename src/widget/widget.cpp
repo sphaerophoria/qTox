@@ -254,6 +254,11 @@ void Widget::init()
         chatForms[toxPk]->focusInput();
     });
 
+    connect(contactListWidget, &FriendListWidget::groupSelected, this, [=] (Group* g) {
+        this->onChatroomWidgetClicked(g);
+        groupChatForms[g->getPersistentId()]->focusInput();
+    });
+
     ui->friendList->setWidget(contactListWidget);
     ui->friendList->setLayoutDirection(Qt::RightToLeft);
     ui->friendList->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -1155,6 +1160,8 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     friendChatrooms[friendPk] = chatroom;
     chatForms[friendPk] = friendForm;
 
+    contactListWidget->addFriendWidget(newfriend, Status::Status::Offline, 0);
+
     const auto activityTime = settings.getFriendActivity(friendPk);
     const auto chatTime = friendForm->getLatestTime();
     if (chatTime > activityTime && chatTime.isValid()) {
@@ -1970,8 +1977,6 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
     connect(messageDispatcher.get(), &IMessageDispatcher::messageComplete, groupChatLog.get(),
             &SessionChatLog::onMessageComplete);
 
-    contactListWidget->addFriendWidget(nullptr, Status::Status::Offline, 0);
-
     auto notifyReceivedCallback = [this, groupId](const ToxPk& author, const Message& message) {
         auto isTargeted = std::any_of(message.metadata.begin(), message.metadata.end(),
                                       [](MessageMetadata metadata) {
@@ -1993,7 +1998,7 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
     groupChatrooms[groupId] = chatroom;
     groupChatForms[groupId] = QSharedPointer<GroupChatForm>(form);
 
-    contactListWidget->addGroupWidget(nullptr);
+    contactListWidget->addGroupWidget(newgroup);
     contactListWidget->activateWindow();
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))

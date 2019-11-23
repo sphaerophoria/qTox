@@ -15,39 +15,26 @@ Item {
 
         model: friendListModel
 
-        delegate: Item {
-            width: parent.width
-            height: 20
-
-            RowLayout {
-                anchors.fill: parent
-                spacing: 0
-
-                Text {
-                    text: model.name
-                    font.bold: true
-                    renderType: Text.NativeRendering
-                    color: "white"
-                }
-
-                Text {
-                    Layout.alignment: Qt.AlignRight
-                    text: model.statusMessage
-                    font.bold: true
-                    renderType: Text.NativeRendering
-                    color: "lightgrey"
-                }
-
-                StatusPic {
-                    Layout.fillHeight: true
-                    Layout.alignment: Qt.AlignRight
-                    toxStatus: model.status
-                }
+        onModelChanged: {
+            var numGroups = 0;
+            var numFriends = 0;
+            for (var i = 0; i < model.length; ++i) {
+                console.log("Item name " + objectNameRetriever.getClassName(model[i]));
+                console.log("Item: " + model[i])
             }
+        }
 
-            MouseArea {
-                anchors.fill:parent
-                onClicked: list.currentIndex = index
+        Component.onCompleted: {
+            console.log("Got model " + model)
+        }
+
+        // FIXME: loader based on type of item somehow
+        delegate: Loader {
+            width: parent.width
+            source: {
+                return objectNameRetriever.getClassName(modelData) == "Friend"
+                    ? "ContactListFriend.qml"
+                    : "ContactListGroup.qml"
             }
         }
 

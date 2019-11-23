@@ -38,6 +38,8 @@ class FriendListLayout;
 class GenericChatroomWidget;
 class CategoryWidget;
 class Friend;
+class Group;
+class FriendListModel;
 
 class FriendListWidget : public QQuickWidget
 {
@@ -49,8 +51,8 @@ public:
     void setMode(SortingMode mode);
     SortingMode getMode() const;
 
-    void addGroupWidget(GroupWidget* widget);
-    void addFriendWidget(FriendWidget* w, ::Status::Status s, int circleIndex);
+    void addGroupWidget(Group* widget);
+    void addFriendWidget(Friend* f, ::Status::Status s, int circleIndex);
     void removeGroupWidget(GroupWidget* w);
     void removeFriendWidget(FriendWidget* w);
     void addCircleWidget(int id);
@@ -70,6 +72,7 @@ signals:
     void connectCircleWidget(CircleWidget& circleWidget);
     void searchCircle(CircleWidget& circleWidget);
     void friendSelected(Friend* f);
+    void groupSelected(Group* g);
 
 public slots:
     void renameGroupWidget(GroupWidget* groupWidget, const QString& newName);
@@ -87,7 +90,10 @@ private slots:
     void onFriendSelected(QVariant f);
 
 private:
-    QList<QObject*> model;
+    void updateModelContents();
+
+    std::vector<Friend*> friends;
+    std::vector<Group*> groups;
 };
 
 #endif // FRIENDLISTWIDGET_H

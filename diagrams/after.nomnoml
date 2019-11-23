@@ -1,3 +1,30 @@
+[ContactListWidget|
+* renamed from FriendListWidget
+* Instantiates the QML side for displaying everything under the contact list]
+
+[ContactListModel|
+* All information needed to construct friend list UI
+* This should replace the "Chatroom" concept]
+
 [ContentDialogManager] o-.. [ContentDialog]
 [ContentDialog] o-.. [GenericChatForm]
-[ContentDialog] o- [QQmlWidgeo]
+[ContentDialog] o- [ContactListWidget]
+
+[QQuickWidget] <:- [ContactListWidget]
+
+[ContactListWidget] o- [ContactListModel]
+
+[ContactListModel] o-.. [FriendModel]
+[ContactListModel] o-.. [Group]
+
+[FriendModel] o- [Friend]
+[FriendModel] o- [CircleId]
+
+[ContactListWidget] o- [QmlContactList]
+
+[QmlContactList|
+* entry point for the qml side of the effort
+* Responsible for sorting friends
+* Responsible for grouping into circles]
+
+[IDialogsManager] <:- [ContentDialogManager]
