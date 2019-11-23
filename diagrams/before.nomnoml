@@ -1,0 +1,44 @@
+[Chatroom|
+Possibly abstraction around actions 
+usable from the context menu??
+]
+
+[FriendChatroom|
+* circles
+* autoaccept
+* resetEventFlags
+* new window management
+]
+
+[GroupChatroom|
+Seems to have support items for friend 
+context menus as well...
+
+* eventFlags
+* friendExists
+* inviteFriend
+* new window management
+]
+
+[ContentDialog] o-.. [GenericChatForm]
+
+[Chatroom] <:- [FriendChatroom]
+[Chatroom] <:- [GroupChatroom]
+
+[FriendChatroom] o- [Friend]
+[FriendChatroom] o- [IDialogsManager]
+
+[IDialogsManager] <:- [ContentDialogManager]
+[ContentDialogManager] o-.. [ContentDialog]
+
+[GroupChatroom] o- [IDialogsManager]
+[GroupChatroom] o- [Group]
+
+[FriendWidget] o- [FriendChatroom]
+[GroupWidget] o- [GroupChatroom]
+
+[GenericChatroomWidget] <:- [FriendWidget]
+[GenericChatroomWidget] <:- [GroupWidget]
+[GenericChatItemWidget] <:- [GenericChatroomWidget]
+
+[ContentDialog] o-.. [GenericChatroomWidget]

@@ -1,0 +1,3 @@
+[ContentDialogManager] o-.. [ContentDialog]
+[ContentDialog] o-.. [GenericChatForm]
+[ContentDialog] o- [QQmlWidgeo]
