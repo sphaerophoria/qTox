@@ -27,7 +27,6 @@
 #include "src/friendlist.h"
 #include "src/persistence/settings.h"
 #include "src/widget/form/groupchatform.h"
-#include "src/widget/groupwidget.h"
 #include <QDebug>
 
 static const int MAX_GROUP_TITLE_LENGTH = 128;

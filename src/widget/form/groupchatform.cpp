@@ -32,7 +32,6 @@
 #include "src/widget/chatformheader.h"
 #include "src/widget/flowlayout.h"
 #include "src/widget/form/chatform.h"
-#include "src/widget/groupwidget.h"
 #include "src/widget/maskablepixmapwidget.h"
 #include "src/widget/style.h"
 #include "src/widget/tool/croppinglabel.h"

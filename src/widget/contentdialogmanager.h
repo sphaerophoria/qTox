@@ -38,8 +38,6 @@ public:
     ContentDialog* current();
     bool contactWidgetExists(const ContactId& groupId);
     void focusContact(const ContactId& contactId);
-    void updateFriendStatus(const ToxPk& friendPk);
-    void updateGroupStatus(const GroupId& friendPk);
     bool isContactActive(const ContactId& contactId);
     ContentDialog* getFriendDialog(const ToxPk& friendPk) const;
     ContentDialog* getGroupDialog(const GroupId& friendPk) const;
@@ -47,9 +45,9 @@ public:
     IDialogs* getFriendDialogs(const ToxPk& friendPk) const;
     IDialogs* getGroupDialogs(const GroupId& groupId) const;
 
-    FriendWidget* addFriendToDialog(ContentDialog* dialog, std::shared_ptr<FriendChatroom> chatroom,
+    void addFriendToDialog(ContentDialog* dialog, Friend* f,
                                     GenericChatForm* form);
-    GroupWidget* addGroupToDialog(ContentDialog* dialog, std::shared_ptr<GroupChatroom> chatroom,
+    void addGroupToDialog(ContentDialog* dialog, Group* g,
                                   GenericChatForm* form);
 
     void addContentDialog(ContentDialog& dialog);

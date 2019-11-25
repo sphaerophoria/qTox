@@ -435,12 +435,8 @@ set(${PROJECT_NAME}_SOURCES
   src/video/videosurface.h
   src/widget/about/aboutfriendform.cpp
   src/widget/about/aboutfriendform.h
-  src/widget/categorywidget.cpp
-  src/widget/categorywidget.h
   src/widget/chatformheader.cpp
   src/widget/chatformheader.h
-  src/widget/circlewidget.cpp
-  src/widget/circlewidget.h
   src/widget/contentdialog.cpp
   src/widget/contentdialog.h
   src/widget/contentdialogmanager.cpp
@@ -496,20 +492,14 @@ set(${PROJECT_NAME}_SOURCES
   src/widget/form/settingswidget.h
   src/widget/form/tabcompleter.cpp
   src/widget/form/tabcompleter.h
-  src/widget/friendlistlayout.cpp
-  src/widget/friendlistlayout.h
   src/widget/friendlistwidget.cpp
   src/widget/friendlistwidget.h
-  src/widget/friendwidget.cpp
-  src/widget/friendwidget.h
   src/widget/genericchatitemlayout.cpp
   src/widget/genericchatitemlayout.h
   src/widget/genericchatitemwidget.cpp
   src/widget/genericchatitemwidget.h
   src/widget/genericchatroomwidget.cpp
   src/widget/genericchatroomwidget.h
-  src/widget/groupwidget.cpp
-  src/widget/groupwidget.h
   src/widget/gui.cpp
   src/widget/gui.h
   src/widget/loginscreen.cpp

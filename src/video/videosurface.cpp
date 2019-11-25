@@ -23,7 +23,6 @@
 #include "src/friendlist.h"
 #include "src/persistence/settings.h"
 #include "src/video/videoframe.h"
-#include "src/widget/friendwidget.h"
 #include "src/widget/style.h"
 
 #include <QDebug>

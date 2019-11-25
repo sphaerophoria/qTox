@@ -46,15 +46,15 @@ class FriendListWidget : public QQuickWidget
     Q_OBJECT
 public:
     using SortingMode = Settings::FriendListSortingMode;
-    explicit FriendListWidget(Widget* parent, bool groupsOnTop = true);
+    explicit FriendListWidget(QWidget* parent, bool groupsOnTop = true);
     ~FriendListWidget();
     void setMode(SortingMode mode);
     SortingMode getMode() const;
 
     void addGroupWidget(Group* widget);
     void addFriendWidget(Friend* f, ::Status::Status s, int circleIndex);
-    void removeGroupWidget(GroupWidget* w);
-    void removeFriendWidget(FriendWidget* w);
+    void removeGroupWidget(Group* w);
+    void removeFriendWidget(Friend* w);
     void addCircleWidget(int id);
     void addCircleWidget(FriendWidget* widget = nullptr);
     void removeCircleWidget(CircleWidget* widget);
@@ -66,6 +66,8 @@ public:
     void updateActivityTime(const QDateTime& date);
     void reDraw();
     void setUnselected();
+
+    bool hasContact(const ContactId& id);
 
 signals:
     void onCompactChanged(bool compact);

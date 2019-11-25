@@ -38,12 +38,9 @@
 #include <QWindow>
 #endif
 
-#include "circlewidget.h"
 #include "contentdialog.h"
 #include "contentlayout.h"
 #include "friendlistwidget.h"
-#include "friendwidget.h"
-#include "groupwidget.h"
 #include "maskablepixmapwidget.h"
 #include "splitterrestorer.h"
 #include "form/groupchatform.h"
@@ -55,8 +52,6 @@
 #include "src/friendlist.h"
 #include "src/grouplist.h"
 #include "src/model/chathistory.h"
-#include "src/model/chatroom/friendchatroom.h"
-#include "src/model/chatroom/groupchatroom.h"
 #include "src/model/friend.h"
 #include "src/model/group.h"
 #include "src/model/groupinvite.h"
@@ -1138,8 +1133,6 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
 
     Friend* newfriend = FriendList::addFriend(friendId, friendPk);
     auto dialogManager = ContentDialogManager::getInstance();
-    auto rawChatroom = new FriendChatroom(newfriend, dialogManager);
-    std::shared_ptr<FriendChatroom> chatroom(rawChatroom);
     const auto compact = settings.getCompactLayout();
     auto history = Nexus::getProfile()->getHistory();
 
@@ -1157,7 +1150,6 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
 
     friendMessageDispatchers[friendPk] = friendMessageDispatcher;
     friendChatLogs[friendPk] = chatHistory;
-    friendChatrooms[friendPk] = chatroom;
     chatForms[friendPk] = friendForm;
 
     contactListWidget->addFriendWidget(newfriend, Status::Status::Offline, 0);
@@ -1219,8 +1211,6 @@ void Widget::onFriendStatusChanged(int friendId, Status::Status status)
 
     f->setStatus(status);
     setWindowTitle(f->getDisplayedName());
-
-    ContentDialogManager::getInstance()->updateFriendStatus(friendPk);
 }
 
 void Widget::onFriendStatusMessageChanged(int friendId, const QString& message)
@@ -1365,7 +1355,7 @@ void Widget::onReceiptReceived(int friendId, ReceiptNum receipt)
     friendMessageDispatchers[f->getPublicKey()]->onReceiptReceived(receipt);
 }
 
-void Widget::addFriendDialog(const Friend* frnd, ContentDialog* dialog)
+void Widget::addFriendDialog(Friend* frnd, ContentDialog* dialog)
 {
     uint32_t friendId = frnd->getId();
     const ToxPk& friendPk = frnd->getPublicKey();
@@ -1377,7 +1367,8 @@ void Widget::addFriendDialog(const Friend* frnd, ContentDialog* dialog)
     }
 
     auto form = chatForms[friendPk];
-    auto chatroom = friendChatrooms[friendPk];
+
+    ContentDialogManager::getInstance()->addFriendToDialog(dialog, frnd, form);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
     auto widgetRemoveFriend = QOverload<const ToxPk&>::of(&Widget::removeFriend);
@@ -1401,7 +1392,6 @@ void Widget::addGroupDialog(Group* group, ContentDialog* dialog)
     }
 
     auto chatForm = groupChatForms[groupId].data();
-    auto chatroom = groupChatrooms[groupId];
 
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 7, 0))
     auto removeGroup = QOverload<const GroupId&>::of(&Widget::removeGroup);
@@ -1460,8 +1450,6 @@ bool Widget::newFriendMessageAlert(const ToxPk& friendId, const QString& text, b
             if (hasActive) {
                 setWindowTitle(f->getDisplayedName());
             }
-        } else {
-            ContentDialogManager::getInstance()->updateFriendStatus(friendId);
         }
 
         return true;
@@ -1510,8 +1498,6 @@ bool Widget::newGroupMessageAlert(const GroupId& groupId, const ToxPk& authorPk,
         if (hasActive) {
             setWindowTitle(g->getName());
         }
-    } else {
-        ContentDialogManager::getInstance()->updateGroupStatus(groupId);
     }
 
     return true;
@@ -1960,8 +1946,6 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
     Group* newgroup =
         GroupList::addGroup(groupnumber, groupId, groupName, enabled, core->getUsername());
     auto dialogManager = ContentDialogManager::getInstance();
-    auto rawChatroom = new GroupChatroom(newgroup, dialogManager);
-    std::shared_ptr<GroupChatroom> chatroom(rawChatroom);
 
     const auto compact = settings.getCompactLayout();
     auto messageProcessor = MessageProcessor(sharedMessageProcessorParams);
@@ -1995,7 +1979,6 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
     form->setColorizedNames(settings.getEnableGroupChatsColor());
     groupMessageDispatchers[groupId] = messageDispatcher;
     groupChatLogs[groupId] = groupChatLog;
-    groupChatrooms[groupId] = chatroom;
     groupChatForms[groupId] = QSharedPointer<GroupChatForm>(form);
 
     contactListWidget->addGroupWidget(newgroup);

@@ -18,17 +18,12 @@
 */
 
 #include "friendlistwidget.h"
-#include "circlewidget.h"
-#include "friendlistlayout.h"
-#include "friendwidget.h"
-#include "groupwidget.h"
 #include "widget.h"
 #include "src/friendlist.h"
 #include "src/model/friend.h"
 #include "src/model/group.h"
 #include "src/model/status.h"
 #include "src/persistence/settings.h"
-#include "src/widget/categorywidget.h"
 
 #include <QDragEnterEvent>
 #include <QDragLeaveEvent>
@@ -53,7 +48,7 @@ public slots:
     }
 };
 
-FriendListWidget::FriendListWidget(Widget* parent, bool groupsOnTop)
+FriendListWidget::FriendListWidget(QWidget* parent, bool groupsOnTop)
     : QQuickWidget(parent)
 {
     updateModelContents();
@@ -111,12 +106,16 @@ void FriendListWidget::addFriendWidget(Friend* f, ::Status::Status s, int circle
     updateModelContents();
 }
 
-void FriendListWidget::removeGroupWidget(GroupWidget* w)
+void FriendListWidget::removeGroupWidget(Group* g)
 {
+    const auto eraseIt = std::remove(groups.begin(), groups.end(), g);
+    groups.erase(eraseIt, groups.end());
 }
 
-void FriendListWidget::removeFriendWidget(FriendWidget* w)
+void FriendListWidget::removeFriendWidget(Friend* f)
 {
+    const auto eraseIt = std::remove(friends.begin(), friends.end(), f);
+    friends.erase(eraseIt, friends.end());
 }
 
 void FriendListWidget::addCircleWidget(int id)
@@ -219,6 +218,23 @@ void FriendListWidget::updateModelContents()
 
     auto ctxt = rootContext();
     ctxt->setContextProperty("friendListModel", QVariant::fromValue(contents));
+}
+
+bool FriendListWidget::hasContact(const ContactId& contactId)
+{
+    const auto friendIt = std::find_if(friends.begin(), friends.end(), [&] (Friend* f) {
+        return f->getPersistentId() == contactId;
+    });
+
+    if (friendIt != friends.end()) {
+        return true;
+    }
+
+    const auto groupIt = std::find_if(groups.begin(), groups.end(), [&] (Group* g) {
+        return g->getPersistentId() == contactId;
+    });
+
+    return groupIt != groups.end();
 }
 
 #include "friendlistwidget.moc"

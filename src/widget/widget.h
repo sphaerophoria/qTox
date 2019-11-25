@@ -125,7 +125,7 @@ public:
     Camera* getCamera();
     static Widget* getInstance(IAudioControl* audio = nullptr);
     void showUpdateDownloadProgress();
-    void addFriendDialog(const Friend* frnd, ContentDialog* dialog);
+    void addFriendDialog(Friend* frnd, ContentDialog* dialog);
     void addGroupDialog(Group* group, ContentDialog* dialog);
     bool newFriendMessageAlert(const ToxPk& friendId, const QString& text, bool sound = true,
                                bool file = false);
@@ -336,7 +336,6 @@ private:
     // yet
     QMap<ToxPk, QMetaObject::Connection> friendAlertConnections;
     QMap<ToxPk, std::shared_ptr<ChatHistory>> friendChatLogs;
-    QMap<ToxPk, std::shared_ptr<FriendChatroom>> friendChatrooms;
     QMap<ToxPk, ChatForm*> chatForms;
 
     QMap<GroupId, std::shared_ptr<GroupMessageDispatcher>> groupMessageDispatchers;
@@ -347,7 +346,6 @@ private:
     // yet
     QMap<GroupId, QMetaObject::Connection> groupAlertConnections;
     QMap<GroupId, std::shared_ptr<IChatLog>> groupChatLogs;
-    QMap<GroupId, std::shared_ptr<GroupChatroom>> groupChatrooms;
     QMap<GroupId, QSharedPointer<GroupChatForm>> groupChatForms;
     Core* core = nullptr;
 
