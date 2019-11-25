@@ -7,19 +7,37 @@ Item {
     id: root
     signal friendSelected(variant f)
 
+    function mergeContacts(friends, groups) {
+        var contacts = []
+
+        for (var i = 0; i < groups.length; ++i) {
+            contacts.push({
+                type: "group",
+                contact: groups[i]
+            })
+        }
+        for (var i = 0; i < friends.length; ++i) {
+            contacts.push({
+                type: "friend",
+                contact: friends[i]
+            })
+        }
+
+        return contacts
+    }
+
     ListView {
         id: list
 
         anchors.fill: parent
         boundsBehavior: Flickable.StopAtBounds
 
-        model: friendListModel
+        model: mergeContacts(friendListModel.friends, friendListModel.groups)
 
         onModelChanged: {
             var numGroups = 0;
             var numFriends = 0;
             for (var i = 0; i < model.length; ++i) {
-                console.log("Item name " + objectNameRetriever.getClassName(model[i]));
                 console.log("Item: " + model[i])
             }
         }
@@ -32,14 +50,15 @@ Item {
         delegate: Loader {
             width: parent.width
             source: {
-                return objectNameRetriever.getClassName(modelData) == "Friend"
+                console.log("modelData: " + modelData.type);
+                return modelData.type == "friend"
                     ? "ContactListFriend.qml"
                     : "ContactListGroup.qml"
             }
         }
 
         onCurrentItemChanged: {
-            var f = friendListModel[list.currentIndex]
+            var f = list.model[list.currentIndex].contact
             console.log("Got f: " + f);
             root.friendSelected(f)
         }

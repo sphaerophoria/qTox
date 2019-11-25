@@ -92,10 +92,7 @@ private slots:
     void onFriendSelected(QVariant f);
 
 private:
-    void updateModelContents();
-
-    std::vector<Friend*> friends;
-    std::vector<Group*> groups;
+    FriendListModel* model;
 };
 
 #endif // FRIENDLISTWIDGET_H

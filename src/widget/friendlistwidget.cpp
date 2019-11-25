@@ -34,29 +34,88 @@
 #include <QTimer>
 #include <cassert>
 
-class ObjectNameRetriever : public QObject
+class FriendListModel : public QObject
 {
     Q_OBJECT
-
+    Q_PROPERTY(QList<QObject*> friends READ getFriends NOTIFY friendsChanged)
+    Q_PROPERTY(QList<QObject*> groups READ getGroups NOTIFY groupsChanged)
 public:
-    ObjectNameRetriever(QObject* parent = nullptr)
+
+    FriendListModel(QObject* parent = nullptr)
         : QObject(parent)
     {}
-public slots:
-    QString getClassName(QObject* obj) const {
-        return obj ? obj->metaObject()->className(): "";
+
+    void addFriend(Friend* f)
+    {
+        if (std::find(friends.begin(), friends.end(), f) != friends.end()) {
+            qWarning() << "Adding duplicate friend to friendlist";
+            return;
+        }
+
+        friends.push_back(f);
+
+        emit friendsChanged();
     }
+
+    void removeFriend(Friend* f)
+    {
+        const auto eraseIt = std::remove(friends.begin(), friends.end(), f);
+        friends.erase(eraseIt, friends.end());
+        emit friendsChanged();
+    }
+
+    void addGroup(Group* g)
+    {
+        if (std::find(groups.begin(), groups.end(), g) != groups.end()) {
+            qWarning() << "Adding duplicate friend to friendlist";
+            return;
+        }
+
+        groups.push_back(g);
+        emit groupsChanged();
+    }
+
+    void removeGroup(Group* g)
+    {
+        const auto eraseIt = std::remove(groups.begin(), groups.end(), g);
+        groups.erase(eraseIt, groups.end());
+        emit groupsChanged();
+    }
+
+signals:
+    void friendsChanged();
+    void groupsChanged();
+
+public slots:
+    QList<QObject*> getFriends()
+    {
+        QList<QObject*> ret;
+        std::transform(friends.begin(), friends.end(), std::back_inserter(ret), [] (Friend* f) {
+            return static_cast<QObject*>(f);
+        });
+        return ret;
+    }
+
+    QList<QObject*> getGroups()
+    {
+        QList<QObject*> ret;
+        std::transform(groups.begin(), groups.end(), std::back_inserter(ret), [] (Group* g) {
+            return static_cast<QObject*>(g);
+        });
+        return ret;
+    }
+
+private:
+    std::vector<Friend*> friends;
+    std::vector<Group*> groups;
 };
 
 FriendListWidget::FriendListWidget(QWidget* parent, bool groupsOnTop)
     : QQuickWidget(parent)
+    , model(new FriendListModel(this))
 {
-    updateModelContents();
-
-    auto objectNameRetriever = new ObjectNameRetriever(this);
-
     auto ctxt = rootContext();
-    ctxt->setContextProperty("objectNameRetriever", objectNameRetriever);
+    ctxt->setContextProperty("friendListModel", model);
 
     setSource(QUrl::fromLocalFile("../qml/FriendListWidget.qml"));
     setAttribute(Qt::WA_AlwaysStackOnTop);
@@ -84,38 +143,22 @@ FriendListWidget::SortingMode FriendListWidget::getMode() const
 
 void FriendListWidget::addGroupWidget(Group* g)
 {
-    if (std::find(groups.begin(), groups.end(), g) != groups.end()) {
-        qWarning() << "Adding duplicate friend to friendlist";
-        return;
-    }
-
-    groups.push_back(g);
-
-    updateModelContents();
+    model->addGroup(g);
 }
 
 void FriendListWidget::addFriendWidget(Friend* f, ::Status::Status s, int circleIndex)
 {
-    if (std::find(friends.begin(), friends.end(), f) != friends.end()) {
-        qWarning() << "Adding duplicate friend to friendlist";
-        return;
-    }
-
-    friends.push_back(f);
-
-    updateModelContents();
+    model->addFriend(f);
 }
 
 void FriendListWidget::removeGroupWidget(Group* g)
 {
-    const auto eraseIt = std::remove(groups.begin(), groups.end(), g);
-    groups.erase(eraseIt, groups.end());
+    model->removeGroup(g);
 }
 
 void FriendListWidget::removeFriendWidget(Friend* f)
 {
-    const auto eraseIt = std::remove(friends.begin(), friends.end(), f);
-    friends.erase(eraseIt, friends.end());
+    model->removeFriend(f);
 }
 
 void FriendListWidget::addCircleWidget(int id)
@@ -201,40 +244,23 @@ void FriendListWidget::setUnselected()
 
 }
 
-void FriendListWidget::updateModelContents()
-{
-    QList<QObject*> contents;
-
-    std::transform(friends.begin(), friends.end(), std::back_inserter(contents),
-        [] (Friend* f) {
-            return static_cast<QObject*>(f);
-        });
-
-    std::transform(groups.begin(), groups.end(), std::back_inserter(contents),
-        [] (Group* g) {
-            qDebug() << "Adding group " << g;
-            return static_cast<QObject*>(g);
-        });
-
-    auto ctxt = rootContext();
-    ctxt->setContextProperty("friendListModel", QVariant::fromValue(contents));
-}
-
 bool FriendListWidget::hasContact(const ContactId& contactId)
 {
-    const auto friendIt = std::find_if(friends.begin(), friends.end(), [&] (Friend* f) {
-        return f->getPersistentId() == contactId;
-    });
+    //FIXME: implement
+    //const auto friendIt = std::find_if(friends.begin(), friends.end(), [&] (Friend* f) {
+    //    return f->getPersistentId() == contactId;
+    //});
 
-    if (friendIt != friends.end()) {
-        return true;
-    }
+    //if (friendIt != friends.end()) {
+    //    return true;
+    //}
 
-    const auto groupIt = std::find_if(groups.begin(), groups.end(), [&] (Group* g) {
-        return g->getPersistentId() == contactId;
-    });
+    //const auto groupIt = std::find_if(groups.begin(), groups.end(), [&] (Group* g) {
+    //    return g->getPersistentId() == contactId;
+    //});
 
-    return groupIt != groups.end();
+    //return groupIt != groups.end();
+    return true;
 }
 
 #include "friendlistwidget.moc"

@@ -12,7 +12,7 @@ Item {
         spacing: 0
 
         Text {
-            text: modelData.name
+            text: modelData.contact.name
             font.bold: true
             renderType: Text.NativeRendering
             color: "white"
@@ -20,7 +20,7 @@ Item {
 
         Text {
             Layout.alignment: Qt.AlignRight
-            text: "" + modelData.peersCount + " user(s) in chat"
+            text: "" + modelData.contact.peersCount + " user(s) in chat"
             font.bold: true
             renderType: Text.NativeRendering
             color: "lightgrey"

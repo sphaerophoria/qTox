@@ -11,7 +11,7 @@ Item {
         spacing: 0
 
         Text {
-            text: modelData.name
+            text: modelData.contact.name
             font.bold: true
             renderType: Text.NativeRendering
             color: "white"
@@ -19,7 +19,7 @@ Item {
 
         Text {
             Layout.alignment: Qt.AlignRight
-            text: modelData.statusMessage
+            text: modelData.contact.statusMessage
             font.bold: true
             renderType: Text.NativeRendering
             color: "lightgrey"
@@ -28,7 +28,7 @@ Item {
         StatusPic {
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignRight
-            toxStatus: modelData.status
+            toxStatus: modelData.contact.status
         }
     }
 
