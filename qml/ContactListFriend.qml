@@ -34,6 +34,24 @@ Item {
 
     MouseArea {
         anchors.fill:parent
-        onClicked: list.currentIndex = index
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: {
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.popup()
+            } else if (mouse.button === Qt.LeftButton) {
+                list.currentIndex = index
+            }
+        }
+
+        Menu {
+            id: contextMenu
+
+            MenuItem { text: qsTr("Invite to group") }
+            MenuItem { text: qsTr("Move to circle") }
+            MenuItem { text: qsTr("Set alias...") }
+            MenuItem { text: qsTr("Autoaccept files from this friend") }
+            MenuItem { text: qsTr("Remove friend") }
+            MenuItem { text: qsTr("Show details") }
+        }
     }
 }

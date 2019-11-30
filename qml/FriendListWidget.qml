@@ -6,6 +6,10 @@ import org.qtox.status 1.0
 Item {
     id: root
     signal friendSelected(variant f)
+    signal groupSelected(variant g)
+    signal groupQuit(variant g)
+    signal groupCreated()
+    signal reloadWidget()
 
     function mergeContacts(friends, groups) {
         var contacts = []
@@ -13,13 +17,13 @@ Item {
         for (var i = 0; i < groups.length; ++i) {
             contacts.push({
                 type: "group",
-                contact: groups[i]
+                contact: groups[i],
             })
         }
         for (var i = 0; i < friends.length; ++i) {
             contacts.push({
                 type: "friend",
-                contact: friends[i]
+                contact: friends[i],
             })
         }
 
@@ -28,29 +32,16 @@ Item {
 
     ListView {
         id: list
+        z: 1
 
         anchors.fill: parent
         boundsBehavior: Flickable.StopAtBounds
 
         model: mergeContacts(friendListModel.friends, friendListModel.groups)
 
-        onModelChanged: {
-            var numGroups = 0;
-            var numFriends = 0;
-            for (var i = 0; i < model.length; ++i) {
-                console.log("Item: " + model[i])
-            }
-        }
-
-        Component.onCompleted: {
-            console.log("Got model " + model)
-        }
-
-        // FIXME: loader based on type of item somehow
         delegate: Loader {
             width: parent.width
             source: {
-                console.log("modelData: " + modelData.type);
                 return modelData.type == "friend"
                     ? "ContactListFriend.qml"
                     : "ContactListGroup.qml"
@@ -58,9 +49,45 @@ Item {
         }
 
         onCurrentItemChanged: {
-            var f = list.model[list.currentIndex].contact
-            console.log("Got f: " + f);
-            root.friendSelected(f)
+            var item = list.model[list.currentIndex]
+            if (item.type == "group") {
+                root.groupSelected(item.contact)
+            } else if (item.type == "friend") {
+                root.friendSelected(item.contact)
+            }
+        }
+    }
+
+    MouseArea {
+        z: 0
+        anchors.fill:parent
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+
+        onClicked: {
+            if (mouse.button === Qt.RightButton) {
+                contextMenu.popup()
+            }
+        }
+
+        Menu {
+            id: contextMenu
+
+            MenuItem {
+                text: qsTr("Create new group...")
+                onTriggered: {
+                    // FIXME: we should support group rename here
+                    root.groupCreated()
+                }
+            }
+
+            MenuItem { text: qsTr("Add new circle...") }
+
+            MenuItem {
+                text: "Reload widget"
+                onTriggered: {
+                    root.reloadWidget()
+                }
+            }
         }
     }
 }

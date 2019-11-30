@@ -32,6 +32,8 @@
 #include <QQmlContext>
 #include <QQuickItem>
 #include <QTimer>
+#include <QFileSystemWatcher>
+#include <QQmlEngine>
 #include <cassert>
 
 class FriendListModel : public QObject
@@ -117,14 +119,11 @@ FriendListWidget::FriendListWidget(QWidget* parent, bool groupsOnTop)
     auto ctxt = rootContext();
     ctxt->setContextProperty("friendListModel", model);
 
-    setSource(QUrl::fromLocalFile("../qml/FriendListWidget.qml"));
     setAttribute(Qt::WA_AlwaysStackOnTop);
     setClearColor(Qt::transparent);
     setResizeMode(QQuickWidget::SizeRootObjectToView);
 
-
-    QObject* root = rootObject();
-    connect(root, SIGNAL(friendSelected(QVariant)), this, SLOT(onFriendSelected(QVariant)));
+    loadQml();
     show();
 }
 
@@ -227,16 +226,56 @@ void FriendListWidget::onFriendSelected(QVariant f_)
 {
     Friend* f = f_.value<Friend*>();
     if (f) {
-        qDebug() << "Selected friend " << f->getDisplayedName();
         emit friendSelected(f);
+    } else {
+        qWarning() << "Invalid type returned from FriendListWidget";
     }
+}
 
-    Group* g = f_.value<Group*>();
+void FriendListWidget::onGroupSelected(QVariant g_)
+{
+    Group* g = g_.value<Group*>();
     if (g) {
-        qDebug() << "Selected group " << g->getDisplayedName();
         emit groupSelected(g);
+    } else {
+        qWarning() << "Invalid type returned from FriendListWidget";
     }
+}
 
+void FriendListWidget::onGroupQuit(QVariant g_)
+{
+    qDebug() << "Attempting to quit group";
+    Group* g = g_.value<Group*>();
+    if (g) {
+        emit groupQuit(g);
+    } else {
+        qWarning() << "Invalid type returned from FriendListWidget";
+    }
+}
+
+void FriendListWidget::onGroupCreated()
+{
+    emit groupCreated();
+}
+
+void FriendListWidget::onWidgetReload()
+{
+    QTimer::singleShot(0, this, [=] {
+        loadQml();
+    });
+}
+
+void FriendListWidget::loadQml()
+{
+    engine()->clearComponentCache();
+    setSource(QUrl::fromLocalFile("../qml/FriendListWidget.qml"));
+
+    QObject* root = rootObject();
+    connect(root, SIGNAL(friendSelected(QVariant)), this, SLOT(onFriendSelected(QVariant)));
+    connect(root, SIGNAL(groupSelected(QVariant)), this, SLOT(onGroupSelected(QVariant)));
+    connect(root, SIGNAL(groupQuit(QVariant)), this, SLOT(onGroupQuit(QVariant)));
+    connect(root, SIGNAL(groupCreated()), this, SLOT(onGroupCreated()));
+    connect(root, SIGNAL(reloadWidget()), this, SLOT(onWidgetReload()));
 }
 
 void FriendListWidget::setUnselected()

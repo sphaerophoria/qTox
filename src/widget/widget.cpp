@@ -254,6 +254,14 @@ void Widget::init()
         groupChatForms[g->getPersistentId()]->focusInput();
     });
 
+    connect(contactListWidget, &FriendListWidget::groupQuit, this, [=] (Group* g) {
+        this->removeGroup(g);
+    });
+
+    connect(contactListWidget, &FriendListWidget::groupCreated, this, [=] {
+        core->createGroup();
+    });
+
     ui->friendList->setWidget(contactListWidget);
     ui->friendList->setLayoutDirection(Qt::RightToLeft);
     ui->friendList->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -319,7 +327,7 @@ void Widget::init()
     connect(ui->searchContactText, &QLineEdit::textChanged, this, &Widget::searchContacts);
     connect(filterGroup, &QActionGroup::triggered, this, &Widget::searchContacts);
     connect(filterDisplayGroup, &QActionGroup::triggered, this, &Widget::changeDisplayMode);
-    connect(ui->friendList, &QWidget::customContextMenuRequested, this, &Widget::friendListContextMenu);
+    //connect(ui->friendList, &QWidget::customContextMenuRequested, this, &Widget::friendListContextMenu);
 
     connect(coreFile, &CoreFile::fileSendStarted, this, &Widget::dispatchFile);
     connect(coreFile, &CoreFile::fileReceiveRequested, this, &Widget::dispatchFile);
@@ -1910,7 +1918,7 @@ void Widget::removeGroup(Group* g, bool fake)
     if (!fake) {
         core->removeGroup(groupnumber);
     }
-    contactListWidget->removeGroupWidget(nullptr); // deletes widget
+    contactListWidget->removeGroupWidget(g); // deletes widget
 
     auto groupChatFormIt = groupChatForms.find(groupId);
     if (groupChatFormIt == groupChatForms.end()) {

@@ -35,7 +35,7 @@
 class Group : public Contact
 {
     Q_OBJECT
-    Q_PROPERTY(QString name READ getDisplayedName NOTIFY titleChanged);
+    Q_PROPERTY(QString name READ getName WRITE setName NOTIFY titleChanged);
     Q_PROPERTY(int peersCount READ getPeersCount NOTIFY numPeersChanged);
 public:
     Group(int groupId, const GroupId persistentGroupId, const QString& name, bool isAvGroupchat,

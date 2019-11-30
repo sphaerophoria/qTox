@@ -47,7 +47,7 @@ class FriendListWidget : public QQuickWidget
 public:
     using SortingMode = Settings::FriendListSortingMode;
     explicit FriendListWidget(QWidget* parent, bool groupsOnTop = true);
-    ~FriendListWidget();
+    ~FriendListWidget() override;
     void setMode(SortingMode mode);
     SortingMode getMode() const;
 
@@ -75,6 +75,8 @@ signals:
     void searchCircle(CircleWidget& circleWidget);
     void friendSelected(Friend* f);
     void groupSelected(Group* g);
+    void groupQuit(Group* g);
+    void groupCreated();
 
 public slots:
     void renameGroupWidget(GroupWidget* groupWidget, const QString& newName);
@@ -90,8 +92,13 @@ protected:
 private slots:
     void dayTimeout();
     void onFriendSelected(QVariant f);
+    void onGroupSelected(QVariant g);
+    void onGroupQuit(QVariant g);
+    void onGroupCreated();
+    void onWidgetReload();
 
 private:
+    void loadQml();
     FriendListModel* model;
 };
 
