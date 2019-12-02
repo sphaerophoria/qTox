@@ -17,15 +17,16 @@
     along with qTox.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef MODEL_CHATROOM_H
-#define MODEL_CHATROOM_H
+#ifndef CIRCLE_H
+#define CIRCLE_H
 
-#include "src/model/contact.h"
+#include <QObject>
 
-class Chatroom
+class Circle : public QObject
 {
+    Q_OBJECT
 public:
-    virtual Contact* getContact() = 0;
+
 };
 
-#endif /* MODEL_CHATROOM_H */
+#endif /*CIRCLE_H*/

@@ -2386,26 +2386,6 @@ Widget::FilterCriteria Widget::getFilterCriteria() const
     return FilterCriteria::All;
 }
 
-bool Widget::groupsVisible() const
-{
-    FilterCriteria filter = getFilterCriteria();
-    return !filterGroups(filter);
-}
-
-void Widget::friendListContextMenu(const QPoint& pos)
-{
-    QMenu menu(this);
-    QAction* createGroupAction = menu.addAction(tr("Create new group..."));
-    QAction* addCircleAction = menu.addAction(tr("Add new circle..."));
-    QAction* chosenAction = menu.exec(ui->friendList->mapToGlobal(pos));
-
-    if (chosenAction == addCircleAction) {
-        contactListWidget->addCircleWidget();
-    } else if (chosenAction == createGroupAction) {
-        core->createGroup();
-    }
-}
-
 void Widget::friendRequestsUpdate()
 {
     unsigned int unreadFriendRequests = settings.getUnreadFriendRequests();

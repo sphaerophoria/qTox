@@ -1,0 +1,24 @@
+[CircleManager|
+    + CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings)
+    + Circle* addCircle()
+    + CircleList getCircles()|
+signals:
+    + void circlesChanged()
+]
+
+[Circle|
+    + void addFriend(Friend* f)
+    + void removeFriend(Friend* f)
+    + QString getName()
+    + void setName(QString)
+    + FriendList getFriends()|
+signals:
+    + void friendsChanged()
+    + void nameChanged()
+]
+
+[CircleManager] +- 0.. [Circle]
+
+[FriendListWidget] o- [CircleList]
+
+[CircleList] o-.. [Circle]

@@ -49,7 +49,11 @@ Item {
             MenuItem { text: qsTr("Invite to group") }
             MenuItem { text: qsTr("Move to circle") }
             MenuItem { text: qsTr("Set alias...") }
-            MenuItem { text: qsTr("Autoaccept files from this friend") }
+            MenuItem {
+                text: qsTr("Autoaccept files from this friend")
+                checkable: true
+                checked: true
+            }
             MenuItem { text: qsTr("Remove friend") }
             MenuItem { text: qsTr("Show details") }
         }

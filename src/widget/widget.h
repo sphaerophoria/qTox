@@ -145,8 +145,6 @@ public:
     void reloadTheme();
     static inline QIcon prepareIcon(QString path, int w = 0, int h = 0);
 
-    bool groupsVisible() const;
-
     void resetIcon();
 
 public slots:
@@ -226,7 +224,6 @@ private slots:
     void onTryCreateTrayIcon();
     void onSetShowSystemTray(bool newValue);
     void onSplitterMoved(int pos, int index);
-    void friendListContextMenu(const QPoint& pos);
     void friendRequestsUpdate();
     void groupInvitesUpdate();
     void groupInvitesClear();
