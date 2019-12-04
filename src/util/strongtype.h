@@ -140,7 +140,7 @@ namespace HashableDetail
             std::is_same<F, S>::value || IsOneOf<F, T...>::value;
     };
 
-    template <typename T>
+    template <typename...>
     struct IsHashable : std::false_type
     {};
 
@@ -153,7 +153,7 @@ namespace HashableDetail
     template <typename T, typename Tag, template <typename, typename> class... Properties>
     struct NamedTypeHashTrueImpl
     {
-        size_t operator()(NamedType<T, Tag, Properties...> const& item)
+        size_t operator()(NamedType<T, Tag, Properties...> const& item) const
         {
             return std::hash<T>()(item.get());
         }

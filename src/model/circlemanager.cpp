@@ -23,8 +23,6 @@
 
 #include <iostream>
 
-#pragma GCC diagnostic ignored "-Wreturn-type"
-
 CircleManager::CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings)
     : friendSettings(friendSettings)
     , circleSettings(circleSettings)
@@ -33,63 +31,89 @@ CircleManager::CircleManager(IFriendSettings& friendSettings, ICircleSettings& c
 
 std::vector<CircleId> CircleManager::getCircles()
 {
+    std::vector<CircleId> circles;
+    circles.reserve(circleData.size());
 
+    std::transform(
+        circleData.begin(), circleData.end(),
+        std::back_inserter(circles),
+        [] (std::pair<CircleId, CircleData> const& item) {
+            return item.first;
+        });
+
+    return circles;
 }
-
-template <typename T>
-struct Test
-{
-};
-
-template <typename T, typename Tag, template <typename, typename> class... Properties>
-struct Test<NamedType<T, Tag, Properties...>>
-{
-    using NT = NamedType<T, Tag, Properties...>;
-
-    template <typename U, typename V>
-    typename std::enable_if<std::is_base_of<NT, Hashable<U, V>>::value, size_t>::type
-    testFn()
-    {
-        return 1;
-    }
-
-    static const bool value = true;
-};
-
 
 CircleId CircleManager::addCircle()
 {
-    auto hash = std::hash<CircleId>()(CircleId(0));
+    auto circleId = CircleId(nextId++);
+    // FIXME: hook into settings
+    circleData[circleId] = CircleData();
+    return circleId;
 }
 
 void CircleManager::removeCircle(CircleId id)
 {
-
+    circleData.erase(id);
 }
 
 QString CircleManager::getCircleName(CircleId id)
 {
+    auto it = circleData.find(id);
+    if (it == circleData.end())
+        return QString();
 
+    return it->second.name;
 }
 
 void CircleManager::setCircleName(CircleId id, QString name)
 {
+    auto it = circleData.find(id);
+    if (it == circleData.end())
+        return;
 
+    it->second.name = name;
 }
 
 void CircleManager::addFriendToCircle(Friend const* f, CircleId circle)
 {
+    auto it = circleData.find(circle);
+    if (it == circleData.end())
+        return;
 
+    friendCircle[f] = circle;
 }
 
 void CircleManager::removeFriendFromCircle(Friend const* f, CircleId circle)
 {
-
+    friendCircle.erase(f);
 }
 
 CircleId CircleManager::getFriendCircle(Friend const* f)
 {
+    auto it = friendCircle.find(f);
+    if (it == friendCircle.end())
+        return none;
 
+    return it->second;
+}
+
+bool CircleManager::getCircleExpanded(CircleId id) const
+{
+    auto it = circleData.find(id);
+    if (it == circleData.end())
+        return false;
+
+    return it->second.circleExpanded;
+}
+
+void CircleManager::setCircleExpanded(CircleId id, bool expanded)
+{
+    auto it = circleData.find(id);
+    if (it == circleData.end())
+        return;
+
+    it->second.circleExpanded = expanded;
 }
 
 constexpr CircleId CircleManager::none;

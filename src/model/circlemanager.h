@@ -33,9 +33,8 @@ class Friend;
 
 using CircleId = NamedType<int, struct CircleIdTag, Orderable, Hashable>;
 
-class CircleManager : public QObject
+class CircleManager
 {
-    Q_OBJECT
 public:
     static constexpr CircleId none = CircleId(std::numeric_limits<int>::min());
     CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings);
@@ -48,14 +47,20 @@ public:
     void addFriendToCircle(Friend const* f, CircleId circle);
     void removeFriendFromCircle(Friend const* f, CircleId circle);
     CircleId getFriendCircle(Friend const* f);
-
-signals:
-    void circlesChanged();
-    void circleNameChanged(CircleId id);
-    void circleFriendsChanged(CircleId id);
+    bool getCircleExpanded(CircleId id) const;
+    void setCircleExpanded(CircleId id, bool expanded);
 private:
     IFriendSettings& friendSettings;
     ICircleSettings& circleSettings;
+    struct CircleData
+    {
+        QString name;
+        bool circleExpanded = false;
+    };
+
+    size_t nextId = 0;
+    std::unordered_map<CircleId, CircleData> circleData;
+    std::unordered_map<Friend const*, CircleId> friendCircle;
 };
 
 #endif /*CIRCLE_MANAGER_H*/
