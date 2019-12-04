@@ -21,6 +21,7 @@
 #define STORNGTYPE_H
 
 #include <QHash>
+#include <type_traits>
 
 template <typename T>
 struct Addable
@@ -80,17 +81,18 @@ struct EqualityComparible
     };
 };
 
+
 template <typename T, typename Underlying>
 struct Hashable
 {
-    friend uint qHash(const Hashable<T, Underlying>& key, uint seed = 0)
+    friend uint qHash(const Hashable<T, Underlying>& id)
     {
-        return qHash(static_cast<T const&>(*key).get(), seed);
+        return qHash(static_cast<T const&>(id).get());
     }
 };
 
 template <typename T, typename Underlying>
-struct Orderable : EqualityComparible<T, Underlying>
+struct Orderable : public EqualityComparible<T, Underlying>
 {
     bool operator<(const T& rhs) const { return static_cast<T const&>(*this).get() < rhs.get(); }
     bool operator>(const T& rhs) const { return static_cast<T const&>(*this).get() > rhs.get(); }
@@ -117,16 +119,66 @@ public:
     using UnderlyingType = T;
 
     NamedType() {}
-    explicit NamedType(T const& value) : value_(value) {}
+    constexpr explicit NamedType(T const& value) : value_(value) {}
     T& get() { return value_; }
     T const& get() const {return value_; }
 private:
     T value_;
 };
 
-template <typename T, typename Tag, template <typename, typename> class... Properties>
-uint qHash(const NamedType<T, Tag, Properties...>& key, uint seed = 0)
+
+namespace HashableDetail
 {
-    return qHash(key.get(), seed);
+    template <typename...>
+    struct IsOneOf {
+        static constexpr bool value = false;
+    };
+
+    template <typename F, typename S, typename... T>
+    struct IsOneOf<F, S, T...> {
+        static constexpr bool value =
+            std::is_same<F, S>::value || IsOneOf<F, T...>::value;
+    };
+
+    template <typename T>
+    struct IsHashable : std::false_type
+    {};
+
+    template <typename T, typename Tag, template <typename, typename> class... Properties>
+    struct IsHashable<NamedType<T, Tag, Properties...>> :
+        IsOneOf<Hashable<NamedType<T, Tag, Properties...>, T>, Properties<NamedType<T, Tag, Properties...>, T>...>
+    {};
+
+
+    template <typename T, typename Tag, template <typename, typename> class... Properties>
+    struct NamedTypeHashTrueImpl
+    {
+        size_t operator()(NamedType<T, Tag, Properties...> const& item)
+        {
+            return std::hash<T>()(item.get());
+        }
+    };
+
+    struct EmptyStruct
+    {};
+
+    template <typename T>
+    struct NamedTypeHashImpl
+    {};
+
+    template <typename T, typename Tag, template <typename, typename> class... Properties>
+    struct NamedTypeHashImpl<NamedType<T, Tag, Properties...>>
+        : std::conditional<HashableDetail::IsHashable<NamedType<T, Tag, Properties...>>::value,
+                    NamedTypeHashTrueImpl<T, Tag, Properties...>,
+                    EmptyStruct>::type
+    {};
 }
+
+namespace std
+{
+    template <typename T, typename Tag, template <typename, typename> class... Properties>
+    struct hash<NamedType<T, Tag, Properties...>> : HashableDetail::NamedTypeHashImpl<NamedType<T, Tag, Properties...>>
+    {};
+}
+
 #endif // STORNGTYPE_H

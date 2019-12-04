@@ -28,7 +28,7 @@
 
 #include <cstdint>
 
-using DispatchedMessageId = NamedType<size_t, struct SentMessageIdTag, Orderable, Incrementable>;
+using DispatchedMessageId = NamedType<size_t, struct SentMessageIdTag, Orderable, Incrementable, Hashable>;
 Q_DECLARE_METATYPE(DispatchedMessageId);
 
 class IMessageDispatcher : public QObject

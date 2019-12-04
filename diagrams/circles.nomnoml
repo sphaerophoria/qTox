@@ -1,24 +1,33 @@
+[IFriendSettings|
+...
++ int getFriendCircleId(ToxPk pk)
++ void setFriendCircleId(ToxPk pk, int circle)]
+
+[ICircleSettings|
++ size_t getCircleCount()
++ int addCircle()
++ void removeCircle(int)
++ QString getCircleName(int)
++ void setCircleName(int)
+ ]
+
 [CircleManager|
     + CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings)
-    + Circle* addCircle()
-    + CircleList getCircles()|
+	+ std::vector<CircleId> getCircles()
+	+ CircleId addCircle()
+	+ void removeCircle(CircleId)
+	+ QString getCircleName(CircleId)
+	+ void setCircleName(CircleId)
+	+ void addFriendToCircle(Friend const*, CircleId)
+	+ void removeFriendFromCircle(Firend const*, CircleId) 
+	+ CircleId getFriendCircle(Friend const*)|
 signals:
     + void circlesChanged()
+	+ void circleNameChanged(CircleId)
+	+ void circleFriendsChanged(CircleId)
 ]
 
-[Circle|
-    + void addFriend(Friend* f)
-    + void removeFriend(Friend* f)
-    + QString getName()
-    + void setName(QString)
-    + FriendList getFriends()|
-signals:
-    + void friendsChanged()
-    + void nameChanged()
-]
+[CircleManager] o- [IFriendSettings]
+[CircleManager] o- [ICircleSettings]
 
-[CircleManager] +- 0.. [Circle]
-
-[FriendListWidget] o- [CircleList]
-
-[CircleList] o-.. [Circle]
+[FriendListWidget] o- [CircleManager]

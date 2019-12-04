@@ -27,6 +27,7 @@
 #include "src/core/toxfile.h"
 #include "src/persistence/ifriendsettings.h"
 #include "src/persistence/igroupsettings.h"
+#include "src/persistence/icirclesettings.h"
 #include "src/video/ivideosettings.h"
 
 #include <QDateTime>
@@ -50,7 +51,8 @@ class Settings : public QObject,
                  public IFriendSettings,
                  public IGroupSettings,
                  public IAudioSettings,
-                 public IVideoSettings
+                 public IVideoSettings,
+                 public ICircleSettings
 {
     Q_OBJECT
 
@@ -550,13 +552,13 @@ public:
     void setEnableGroupChatsColor(bool state);
     bool getEnableGroupChatsColor() const;
 
-    int getCircleCount() const;
-    int addCircle(const QString& name = QString());
-    int removeCircle(int id);
-    QString getCircleName(int id) const;
-    void setCircleName(int id, const QString& name);
-    bool getCircleExpanded(int id) const;
-    void setCircleExpanded(int id, bool expanded);
+    int getCircleCount() const override;
+    int addCircle(const QString& name = QString()) override;
+    int removeCircle(int id) override;
+    QString getCircleName(int id) const override;
+    void setCircleName(int id, const QString& name) override;
+    bool getCircleExpanded(int id) const override;
+    void setCircleExpanded(int id, bool expanded) override;
 
     bool addFriendRequest(const QString& friendAddress, const QString& message);
     unsigned int getUnreadFriendRequests() const;

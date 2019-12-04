@@ -1,5 +1,5 @@
 /*
-    Copyright © 2019 by The qTox Project Contributors
+    Copyright © 2014-2019 by The qTox Project Contributors
 
     This file is part of qTox, a Qt-based graphical interface for Tox.
 
@@ -17,33 +17,23 @@
     along with qTox.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef TOXPK_H
-#define TOXPK_H
+#ifndef ICIRCLE_SETTINGS_H
+#define ICIRCLE_SETTINGS_H
 
-#include "src/core/contactid.h"
-#include <QByteArray>
-#include <cstdint>
+#include <QString>
 
-class ToxPk : public ContactId
+class ICircleSettings
 {
 public:
-    ToxPk();
-    ToxPk(const ToxPk& other);
-    explicit ToxPk(const QByteArray& rawId);
-    explicit ToxPk(const uint8_t* rawId);
-    int getSize() const override;
+    virtual ~ICircleSettings(){}
+
+    virtual int getCircleCount() const = 0;
+    virtual int addCircle(const QString& name = QString()) = 0;
+    virtual int removeCircle(int id) = 0;
+    virtual QString getCircleName(int id) const = 0;
+    virtual void setCircleName(int id, const QString& name) = 0;
+    virtual bool getCircleExpanded(int id) const = 0;
+    virtual void setCircleExpanded(int id, bool expanded) = 0;
 };
 
-namespace std
-{
-    template <>
-    struct hash<ToxPk>
-    {
-        std::size_t operator()(const ToxPk& k) const
-        {
-            return qHash(k.getByteArray());
-        }
-    };
-}
-
-#endif // TOXPK_H
+#endif /*ICIRCLE_SETTINGS_H*/
