@@ -37,7 +37,10 @@ class CircleManager
 {
 public:
     static constexpr CircleId none = CircleId(std::numeric_limits<int>::min());
-    CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings);
+    CircleManager(
+        const std::vector<Friend const*>& initialFriends,
+        IFriendSettings& friendSettings,
+        ICircleSettings& circleSettings);
 
     std::vector<CircleId> getCircles();
     CircleId addCircle();
@@ -50,17 +53,15 @@ public:
     bool getCircleExpanded(CircleId id) const;
     void setCircleExpanded(CircleId id, bool expanded);
 private:
+    void loadCircles();
+    void loadFriendCircles(const std::vector<const Friend*>& initialFriends);
+
     IFriendSettings& friendSettings;
     ICircleSettings& circleSettings;
-    struct CircleData
-    {
-        QString name;
-        bool circleExpanded = false;
-    };
-
     size_t nextId = 0;
-    std::unordered_map<CircleId, CircleData> circleData;
     std::unordered_map<Friend const*, CircleId> friendCircle;
+    std::vector<CircleId> settingsIdToCircleId;
+    std::unordered_map<CircleId, int> circleIdToSettingsId;
 };
 
 #endif /*CIRCLE_MANAGER_H*/

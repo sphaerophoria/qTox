@@ -29,6 +29,15 @@ public:
 
     virtual int getCircleCount() const = 0;
     virtual int addCircle(const QString& name = QString()) = 0;
+
+    /**
+     * @brief Removes cirlce at id
+     * @param[in] id
+     * @return New size of circle list
+     * @note Implementations currently guarantee that this is implemented
+     * via a swap and pop. This means that the returned value effectively
+     * tells the caller which id replaced the removed id
+     */
     virtual int removeCircle(int id) = 0;
     virtual QString getCircleName(int id) const = 0;
     virtual void setCircleName(int id, const QString& name) = 0;
