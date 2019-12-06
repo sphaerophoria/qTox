@@ -30,6 +30,7 @@
 
 #include <QDateTime>
 #include <QObject>
+#include <QSignalSpy>
 #include <QtTest/QtTest>
 
 #include <unordered_map>
@@ -154,6 +155,7 @@ private slots:
     void testFriendRemovedFromDeletedCircle();
     void testLoadCirclesFromDb();
     void testSaveCirclesToDb();
+    void testSignals();
 
 private:
     std::unique_ptr<MockFriendSettings> friendSettings;
@@ -310,6 +312,36 @@ void TestCircleManager::testSaveCirclesToDb()
     QVERIFY(friendSettings->getFriendCircleID(f.getPublicKey()) == -1);
 }
 
+void TestCircleManager::testSignals()
+{
+    // Work around const Friend* not being registered. Usually handled in Nexus
+    qRegisterMetaType<const Friend*>("const Friend*");
+
+    QSignalSpy nameChangedSpy(circleManager.get(), SIGNAL(circleNameChanged(CircleId)));
+    QSignalSpy expandedChangedSpy(circleManager.get(), SIGNAL(circleExpandedChanged(CircleId)));
+    QSignalSpy friendCircleChangedSpy(circleManager.get(), SIGNAL(friendCircleChanged(const Friend*)));
+    QSignalSpy circleRemovedSpy(circleManager.get(), SIGNAL(circleRemoved(CircleId)));
+
+    Friend f(0, ToxPk());
+    auto circleId = circleManager->addCircle();
+    circleManager->setCircleName(circleId, "Test");
+
+    QVERIFY(nameChangedSpy.size() == 1);
+
+    circleManager->setCircleExpanded(circleId, true);
+
+    QVERIFY(expandedChangedSpy.size() == 1);
+
+    circleManager->addFriendToCircle(&f, circleId);
+
+    QVERIFY(friendCircleChangedSpy.size() == 1);
+
+    circleManager->removeCircle(circleId);
+
+    QVERIFY(friendCircleChangedSpy.size() == 2);
+    QVERIFY(circleRemovedSpy.size() == 1);
+
+}
 
 QTEST_GUILESS_MAIN(TestCircleManager)
 #include "circlemanager_test.moc"

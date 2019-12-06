@@ -107,6 +107,7 @@ void Nexus::start()
     qRegisterMetaType<GroupInvite>("GroupInvite");
     qRegisterMetaType<ReceiptNum>("ReceiptNum");
     qRegisterMetaType<RowId>("RowId");
+    qRegisterMetaType<const Friend*>("const Friend*");
     qmlRegisterUncreatableMetaObject(Status::staticMetaObject, "org.qtox.status", 1, 0, "Status", "Failed to register status enum");
 
     qApp->setQuitOnLastWindowClosed(false);

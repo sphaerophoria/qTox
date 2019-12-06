@@ -85,6 +85,8 @@ void CircleManager::removeCircle(CircleId id)
     circleIdToSettingsId[settingsIdToCircleId[movedSettingsId]] = settingsId;
     settingsIdToCircleId[settingsId] = settingsIdToCircleId[movedSettingsId];
     settingsIdToCircleId.pop_back();
+
+    emit circleRemoved(id);
 }
 
 
@@ -104,6 +106,7 @@ void CircleManager::setCircleName(CircleId id, QString name)
         return;
 
     circleSettings.setCircleName(it->second, name);
+    emit circleNameChanged(id);
 }
 
 void CircleManager::addFriendToCircle(Friend const* f, CircleId circle)
@@ -114,12 +117,16 @@ void CircleManager::addFriendToCircle(Friend const* f, CircleId circle)
 
     friendCircle[f] = circle;
     friendSettings.setFriendCircleID(f->getPublicKey(), circleIdToSettingsId[circle]);
+
+    emit friendCircleChanged(f);
 }
 
 void CircleManager::removeFriendFromCircle(Friend const* f, CircleId circle)
 {
     friendCircle.erase(f);
     friendSettings.setFriendCircleID(f->getPublicKey(), -1);
+
+    emit friendCircleChanged(f);
 }
 
 CircleId CircleManager::getFriendCircle(Friend const* f)
@@ -147,6 +154,8 @@ void CircleManager::setCircleExpanded(CircleId id, bool expanded)
         return;
 
     circleSettings.setCircleExpanded(it->second, expanded);
+
+    emit circleExpandedChanged(id);
 }
 
 void CircleManager::loadCircles()

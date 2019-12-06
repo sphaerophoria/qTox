@@ -32,9 +32,11 @@ class ICircleSettings;
 class Friend;
 
 using CircleId = NamedType<int, struct CircleIdTag, Orderable, Hashable>;
+Q_DECLARE_METATYPE(CircleId);
 
-class CircleManager
+class CircleManager : public QObject
 {
+    Q_OBJECT
 public:
     static constexpr CircleId none = CircleId(std::numeric_limits<int>::min());
     CircleManager(
@@ -52,6 +54,13 @@ public:
     CircleId getFriendCircle(Friend const* f);
     bool getCircleExpanded(CircleId id) const;
     void setCircleExpanded(CircleId id, bool expanded);
+
+signals:
+    void circleNameChanged(CircleId id);
+    void circleExpandedChanged(CircleId id);
+    void friendCircleChanged(const Friend* f);
+    void circleRemoved(CircleId id);
+
 private:
     void loadCircles();
     void loadFriendCircles(const std::vector<const Friend*>& initialFriends);
