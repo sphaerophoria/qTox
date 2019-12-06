@@ -51,7 +51,7 @@ static const QSize defaultSize(720, 400);
 ContentDialog::ContentDialog(QWidget* parent)
     : ActivateDialog(parent, Qt::Window)
     , splitter{new QSplitter(this)}
-    , friendList(new FriendListWidget(this))
+    , friendList(new FriendListWidget(this, nullptr))
     , activeContact(nullptr)
     , videoSurfaceSize(QSize())
     , videoCount(0)

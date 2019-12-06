@@ -44,6 +44,7 @@ public:
         IFriendSettings& friendSettings,
         ICircleSettings& circleSettings);
 
+public slots:
     std::vector<CircleId> getCircles();
     CircleId addCircle();
     void removeCircle(CircleId id);

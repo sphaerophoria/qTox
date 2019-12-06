@@ -40,13 +40,14 @@ class CategoryWidget;
 class Friend;
 class Group;
 class FriendListModel;
+class CircleManager;
 
 class FriendListWidget : public QQuickWidget
 {
     Q_OBJECT
 public:
     using SortingMode = Settings::FriendListSortingMode;
-    explicit FriendListWidget(QWidget* parent, bool groupsOnTop = true);
+    explicit FriendListWidget(QWidget* parent, CircleManager* circleManager, bool groupsOnTop = true);
     ~FriendListWidget() override;
     void setMode(SortingMode mode);
     SortingMode getMode() const;

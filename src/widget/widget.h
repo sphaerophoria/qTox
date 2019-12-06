@@ -38,6 +38,7 @@
 #include "src/core/toxpk.h"
 #include "src/model/friendmessagedispatcher.h"
 #include "src/model/groupmessagedispatcher.h"
+#include "src/model/circlemanager.h"
 #if DESKTOP_NOTIFICATIONS
 #include "src/platform/desktop_notifications/desktopnotify.h"
 #endif
@@ -302,6 +303,8 @@ private:
 
     ProfileInfo* profileInfo;
     ProfileForm* profileForm;
+
+    std::unique_ptr<CircleManager> circleManager;
 
     QPointer<SettingsWidget> settingsWidget;
     std::unique_ptr<UpdateCheck> updateCheck; // ownership should be moved outside Widget once non-singleton

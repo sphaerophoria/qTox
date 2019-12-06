@@ -242,7 +242,14 @@ void Widget::init()
 
     ui->searchContactFilterBox->setMenu(filterMenu);
 
-    contactListWidget = new FriendListWidget(this, settings.getGroupchatPosition());
+    std::vector<const Friend*> currentFriends;
+    auto currentFriendsQList = FriendList::getAllFriends();
+
+    currentFriends.reserve(currentFriendsQList.size());
+    std::copy(currentFriendsQList.begin(), currentFriendsQList.end(), std::back_inserter(currentFriends));
+
+    circleManager.reset(new CircleManager(currentFriends, settings, settings));
+    contactListWidget = new FriendListWidget(this, circleManager.get(), settings.getGroupchatPosition());
     connect(contactListWidget, &FriendListWidget::friendSelected, this, [=] (Friend* f) {
         auto toxPk = f->getPublicKey();
         this->onChatroomWidgetClicked(f);

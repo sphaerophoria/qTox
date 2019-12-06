@@ -23,6 +23,7 @@
 #include "src/model/friend.h"
 #include "src/model/group.h"
 #include "src/model/status.h"
+#include "src/model/circlemanager.h"
 #include "src/persistence/settings.h"
 
 #include <QDragEnterEvent>
@@ -41,10 +42,12 @@ class FriendListModel : public QObject
     Q_OBJECT
     Q_PROPERTY(QList<QObject*> friends READ getFriends NOTIFY friendsChanged)
     Q_PROPERTY(QList<QObject*> groups READ getGroups NOTIFY groupsChanged)
+    Q_PROPERTY(QObject* circleManager MEMBER circleManager);
 public:
 
-    FriendListModel(QObject* parent = nullptr)
+    FriendListModel(CircleManager* circleManager, QObject* parent = nullptr)
         : QObject(parent)
+        , circleManager(circleManager)
     {}
 
     void addFriend(Friend* f)
@@ -110,11 +113,12 @@ public slots:
 private:
     std::vector<Friend*> friends;
     std::vector<Group*> groups;
+    QObject* circleManager;
 };
 
-FriendListWidget::FriendListWidget(QWidget* parent, bool groupsOnTop)
+FriendListWidget::FriendListWidget(QWidget* parent, CircleManager* circleManager, bool groupsOnTop)
     : QQuickWidget(parent)
-    , model(new FriendListModel(this))
+    , model(new FriendListModel(circleManager, this))
 {
     auto ctxt = rootContext();
     ctxt->setContextProperty("friendListModel", model);

@@ -33,6 +33,7 @@ template <typename K, typename V>
 class QHash;
 
 class ContentLayout;
+class CircleManager;
 class Friend;
 class FriendListWidget;
 class GenericChatForm;
