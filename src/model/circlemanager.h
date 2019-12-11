@@ -24,43 +24,35 @@
 
 #include <QObject>
 
+#include <memory>
 #include <limits>
 #include <unordered_map>
 
 class IFriendSettings;
 class ICircleSettings;
 class Friend;
-
-using CircleId = NamedType<int, struct CircleIdTag, Orderable, Hashable>;
-Q_DECLARE_METATYPE(CircleId);
+class Circle;
 
 class CircleManager : public QObject
 {
     Q_OBJECT
 public:
-    static constexpr CircleId none = CircleId(std::numeric_limits<int>::min());
     CircleManager(
         const std::vector<Friend const*>& initialFriends,
         IFriendSettings& friendSettings,
         ICircleSettings& circleSettings);
 
 public slots:
-    std::vector<CircleId> getCircles();
-    CircleId addCircle();
-    void removeCircle(CircleId id);
-    QString getCircleName(CircleId id);
-    void setCircleName(CircleId id, QString name);
-    void addFriendToCircle(Friend const* f, CircleId circle);
-    void removeFriendFromCircle(Friend const* f, CircleId circle);
-    CircleId getFriendCircle(Friend const* f);
-    bool getCircleExpanded(CircleId id) const;
-    void setCircleExpanded(CircleId id, bool expanded);
+    std::vector<Circle*> getCircles();
+    Circle* addCircle();
+    void removeCircle(Circle* circle);
+    void addFriendToCircle(Friend const* f, Circle* circle);
+    void removeFriendFromCircle(Friend const* f, Circle* circle);
+    Circle* getFriendCircle(Friend const* f);
 
 signals:
-    void circleNameChanged(CircleId id);
-    void circleExpandedChanged(CircleId id);
+    void circlesChanged();
     void friendCircleChanged(const Friend* f);
-    void circleRemoved(CircleId id);
 
 private:
     void loadCircles();
@@ -69,9 +61,51 @@ private:
     IFriendSettings& friendSettings;
     ICircleSettings& circleSettings;
     size_t nextId = 0;
-    std::unordered_map<Friend const*, CircleId> friendCircle;
-    std::vector<CircleId> settingsIdToCircleId;
-    std::unordered_map<CircleId, int> circleIdToSettingsId;
+    std::unordered_map<Friend const*, Circle*> friendCircle;
+    std::vector<std::unique_ptr<Circle>> circles;
+};
+
+class Circle : public QObject
+{
+    Q_OBJECT
+
+    Q_PROPERTY(QString name READ getName WRITE setName NOTIFY nameChanged);
+    Q_PROPERTY(bool expanded READ getExpanded WRITE setExpanded NOTIFY expandedChanged);
+
+
+public:
+    struct CircleManagerKey {
+        friend class CircleManager;
+        private:
+            CircleManagerKey() {}
+            CircleManagerKey(CircleManagerKey const&) = default;
+    };
+    Circle(ICircleSettings& circleSettings, int settingsId, CircleManagerKey)
+        : circleSettings(circleSettings)
+        , settingsId(settingsId)
+    {}
+
+    Circle(Circle const& other) = delete;
+    Circle& operator=(Circle const& other) = delete;
+    Circle(Circle&& other) = delete;
+    Circle& operator=(Circle&& other) = delete;
+
+    int getSettingsId(CircleManagerKey);
+    void setSettingsId(int id, CircleManagerKey);
+
+    QString getName();
+    void setName(QString name);
+    bool getExpanded() const;
+    void setExpanded(bool expanded);
+
+signals:
+    void nameChanged();
+    void expandedChanged();
+
+private:
+
+    ICircleSettings& circleSettings;
+    int settingsId;
 };
 
 #endif /*CIRCLE_MANAGER_H*/

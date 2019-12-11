@@ -183,8 +183,9 @@ void TestCircleManager::testAddRemoveCircle()
 
     QVERIFY(circleId != circleId2);
 
-    auto createdCircles = std::vector<CircleId>({circleId, circleId2});
+    auto createdCircles = std::vector<Circle*>({circleId, circleId2});
     auto managerCircles = circleManager->getCircles();
+
     std::sort(managerCircles.begin(), managerCircles.end());
     std::sort(createdCircles.begin(), createdCircles.end());
 
@@ -193,58 +194,60 @@ void TestCircleManager::testAddRemoveCircle()
     // Remove the first circle to ensure that CircleIds exposed from CircleManager
     // are stable
     circleManager->removeCircle(circleId);
+    managerCircles = circleManager->getCircles();
 
-    QVERIFY(circleManager->getCircles() == std::vector<CircleId>({circleId2}));
+    QVERIFY(managerCircles == std::vector<Circle*>({circleId2}));
 }
 
 void TestCircleManager::testSetCircleName()
 {
     auto circleId = circleManager->addCircle();
-    circleManager->setCircleName(circleId, "TestCircle");
-    QVERIFY(circleManager->getCircleName(circleId) == "TestCircle");
+    circleId->setName("TestCircle");
+    QVERIFY(circleId->getName() == "TestCircle");
 }
 
 void TestCircleManager::testSetCircleExpanded()
 {
     auto circleId = circleManager->addCircle();
-    circleManager->setCircleExpanded(circleId, true);
-    QVERIFY(circleManager->getCircleExpanded(circleId) == true);
+    circleId->setExpanded(true);
+    QVERIFY(circleId->getExpanded() == true);
 
-    circleManager->setCircleExpanded(circleId, false);
-    QVERIFY(circleManager->getCircleExpanded(circleId) == false);
+    circleId->setExpanded(false);
+    QVERIFY(circleId->getExpanded() == false);
 }
 
 
 void TestCircleManager::testAddRemoveFriendToCircle()
 {
     Friend f(0, ToxPk());
-    auto circleId = circleManager->addCircle();
-    QVERIFY(circleManager->getFriendCircle(&f) == CircleManager::none);
+    auto circle = circleManager->addCircle();
 
-    circleManager->addFriendToCircle(&f, circleId);
-    QVERIFY(circleManager->getFriendCircle(&f) == circleId);
+    QVERIFY(circleManager->getFriendCircle(&f) == nullptr);
+
+    circleManager->addFriendToCircle(&f, circle);
+    QVERIFY(circleManager->getFriendCircle(&f) == circle);
 
     // Ensure that friend gets moved to different circle
-    circleId = circleManager->addCircle();
-    circleManager->addFriendToCircle(&f, circleId);
-    QVERIFY(circleManager->getFriendCircle(&f) == circleId);
+    circle = circleManager->addCircle();
+    circleManager->addFriendToCircle(&f, circle);
+    QVERIFY(circleManager->getFriendCircle(&f) == circle);
 
-    circleManager->removeFriendFromCircle(&f, circleId);
+    circleManager->removeFriendFromCircle(&f, circle);
 
-    QVERIFY(circleManager->getFriendCircle(&f) == CircleManager::none);
+    QVERIFY(circleManager->getFriendCircle(&f) == nullptr);
 }
 
 void TestCircleManager::testFriendRemovedFromDeletedCircle()
 {
     Friend f(0, ToxPk());
     auto circleId = circleManager->addCircle();
-    QVERIFY(circleManager->getFriendCircle(&f) == CircleManager::none);
+    QVERIFY(circleManager->getFriendCircle(&f) == nullptr);
 
     circleManager->addFriendToCircle(&f, circleId);
     QVERIFY(circleManager->getFriendCircle(&f) == circleId);
 
     circleManager->removeCircle(circleId);
-    QVERIFY(circleManager->getFriendCircle(&f) == CircleManager::none);
+    QVERIFY(circleManager->getFriendCircle(&f) == nullptr);
 }
 
 void TestCircleManager::testLoadCirclesFromDb()
@@ -273,11 +276,11 @@ void TestCircleManager::testLoadCirclesFromDb()
     auto circleId1 = circleManager->getFriendCircle(&f1);
     auto circleId2 = circleManager->getFriendCircle(&f2);
 
-    QVERIFY(circleManager->getCircleName(circleId1) ==  "Test 1");
-    QVERIFY(circleManager->getCircleExpanded(circleId1) == false);
+    QVERIFY(circleId1->getName() ==  "Test 1");
+    QVERIFY(circleId1->getExpanded() == false);
 
-    QVERIFY(circleManager->getCircleName(circleId2) ==  "Test 2");
-    QVERIFY(circleManager->getCircleExpanded(circleId2) == true);
+    QVERIFY(circleId2->getName() ==  "Test 2");
+    QVERIFY(circleId2->getExpanded() == true);
 }
 
 void TestCircleManager::testSaveCirclesToDb()
@@ -285,11 +288,11 @@ void TestCircleManager::testSaveCirclesToDb()
     auto id1 = circleManager->addCircle();
     auto id2 = circleManager->addCircle();
 
-    circleManager->setCircleName(id1, "Test 1");
-    circleManager->setCircleName(id2, "Test 2");
+    id1->setName("Test 1");
+    id2->setName("Test 2");
 
-    circleManager->setCircleExpanded(id1, true);
-    circleManager->setCircleExpanded(id2, false);
+    id1->setExpanded(true);
+    id2->setExpanded(false);
 
     QVERIFY(circleSettings->getCircleCount() == 2);
     QVERIFY(circleSettings->getCircleName(0) == "Test 1");
@@ -299,7 +302,7 @@ void TestCircleManager::testSaveCirclesToDb()
 
     // Ensure that stable CircleIds map back to unstable settings ids
     circleManager->removeCircle(id1);
-    circleManager->setCircleName(id2, "Test 3");
+    id2->setName("Test 3");
     QVERIFY(circleSettings->getCircleCount() == 1);
     QVERIFY(circleSettings->getCircleName(0) == "Test 3");
     QVERIFY(circleSettings->getCircleExpanded(0) == false);
@@ -317,18 +320,22 @@ void TestCircleManager::testSignals()
     // Work around const Friend* not being registered. Usually handled in Nexus
     qRegisterMetaType<const Friend*>("const Friend*");
 
-    QSignalSpy nameChangedSpy(circleManager.get(), SIGNAL(circleNameChanged(CircleId)));
-    QSignalSpy expandedChangedSpy(circleManager.get(), SIGNAL(circleExpandedChanged(CircleId)));
     QSignalSpy friendCircleChangedSpy(circleManager.get(), SIGNAL(friendCircleChanged(const Friend*)));
-    QSignalSpy circleRemovedSpy(circleManager.get(), SIGNAL(circleRemoved(CircleId)));
+    QSignalSpy circlesChangedSpy(circleManager.get(), SIGNAL(circlesChanged()));
 
     Friend f(0, ToxPk());
     auto circleId = circleManager->addCircle();
-    circleManager->setCircleName(circleId, "Test");
+
+    QVERIFY(circlesChangedSpy.size() == 1);
+
+    QSignalSpy nameChangedSpy(circleId, SIGNAL(nameChanged()));
+    QSignalSpy expandedChangedSpy(circleId, SIGNAL(expandedChanged()));
+
+    circleId->setName("Test");
 
     QVERIFY(nameChangedSpy.size() == 1);
 
-    circleManager->setCircleExpanded(circleId, true);
+    circleId->setExpanded(true);
 
     QVERIFY(expandedChangedSpy.size() == 1);
 
@@ -339,8 +346,7 @@ void TestCircleManager::testSignals()
     circleManager->removeCircle(circleId);
 
     QVERIFY(friendCircleChangedSpy.size() == 2);
-    QVERIFY(circleRemovedSpy.size() == 1);
-
+    QVERIFY(circlesChangedSpy.size() == 2);
 }
 
 QTEST_GUILESS_MAIN(TestCircleManager)

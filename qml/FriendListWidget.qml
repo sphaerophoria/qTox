@@ -13,6 +13,7 @@ Item {
 
     function mergeContacts(friends, groups) {
         var contacts = []
+        console.log("Friends: " + friends.length)
 
         for (var i = 0; i < groups.length; ++i) {
             contacts.push({

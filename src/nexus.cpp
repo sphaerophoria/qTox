@@ -109,6 +109,8 @@ void Nexus::start()
     qRegisterMetaType<RowId>("RowId");
     qRegisterMetaType<const Friend*>("const Friend*");
     qmlRegisterUncreatableMetaObject(Status::staticMetaObject, "org.qtox.status", 1, 0, "Status", "Failed to register status enum");
+    qmlRegisterUncreatableType<Circle>("org.qtox.circle", 1, 0, "Circle", "Failed to register circle");
+    qmlRegisterUncreatableType<Friend>("org.qtox.friend", 1, 0, "Friend", "Failed to register circle");
 
     qApp->setQuitOnLastWindowClosed(false);
 

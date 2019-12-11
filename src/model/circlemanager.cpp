@@ -44,118 +44,95 @@ CircleManager::CircleManager(
     loadFriendCircles(initialFriends);
 }
 
-std::vector<CircleId> CircleManager::getCircles()
+std::vector<Circle*> CircleManager::getCircles()
 {
-    return settingsIdToCircleId;
+    std::vector<Circle*> ret;
+    ret.reserve(circles.size());
+
+    std::transform(circles.begin(), circles.end(), std::back_inserter(ret), [] (std::unique_ptr<Circle>& circle) {
+        return circle.get();
+    });
+
+    return ret;
 }
 
-CircleId CircleManager::addCircle()
+Circle* CircleManager::addCircle()
 {
-    auto circleId = CircleId(nextId++);
-
     auto settingsId = circleSettings.addCircle();
-    assert(settingsId == settingsIdToCircleId.size());
-    settingsIdToCircleId.push_back(circleId);
-    circleIdToSettingsId[circleId] = settingsId;
+    auto circle = std::unique_ptr<Circle>(new Circle(circleSettings, settingsId, {}));
+    auto ret = circle.get();
+    circles.push_back(std::move(circle));
 
-    return circleId;
+    emit circlesChanged();
+
+    return ret;
 }
 
-void CircleManager::removeCircle(CircleId id)
+void CircleManager::removeCircle(Circle* circle)
 {
     std::vector<const Friend*> friendsInCircle;
     for (auto const& friendCirclePair : friendCircle)
     {
-        if (friendCirclePair.second == id) {
+        if (friendCirclePair.second == circle) {
             friendsInCircle.push_back(friendCirclePair.first);
         }
     }
 
     for (auto const& f : friendsInCircle)
     {
-        removeFriendFromCircle(f, id);
+        removeFriendFromCircle(f, circle);
     }
 
-    auto settingsId = circleIdToSettingsId[id];
+    auto settingsId = circle->getSettingsId({});
     auto movedSettingsId = circleSettings.removeCircle(settingsId);
 
-    circleIdToSettingsId.erase(id);
+    auto removedIt = std::remove_if(circles.begin(), circles.end(), [&](std::unique_ptr<Circle>& item) {
+        return item.get() == circle;
+    });
+    circles.erase(removedIt, circles.end());
 
-    assert(movedSettingsId == settingsIdToCircleId.size() - 1);
-    circleIdToSettingsId[settingsIdToCircleId[movedSettingsId]] = settingsId;
-    settingsIdToCircleId[settingsId] = settingsIdToCircleId[movedSettingsId];
-    settingsIdToCircleId.pop_back();
+    auto movedCircle = std::find_if(circles.begin(), circles.end(), [&] (std::unique_ptr<Circle>& circle) {
+        return circle->getSettingsId({}) == movedSettingsId;
+    });
 
-    emit circleRemoved(id);
+    if (movedCircle != circles.end()) {
+        (*movedCircle)->setSettingsId(settingsId, {});
+    } else {
+        assert(movedSettingsId == settingsId);
+    }
+
+    emit circlesChanged();
 }
 
-
-QString CircleManager::getCircleName(CircleId id)
+void CircleManager::addFriendToCircle(Friend const* f, Circle* circle)
 {
-    auto it = circleIdToSettingsId.find(id);
-    if (it == circleIdToSettingsId.end())
-        return QString();
-
-    return circleSettings.getCircleName(it->second);
-}
-
-void CircleManager::setCircleName(CircleId id, QString name)
-{
-    auto it = circleIdToSettingsId.find(id);
-    if (it == circleIdToSettingsId.end())
-        return;
-
-    circleSettings.setCircleName(it->second, name);
-    emit circleNameChanged(id);
-}
-
-void CircleManager::addFriendToCircle(Friend const* f, CircleId circle)
-{
-    auto it = circleIdToSettingsId.find(circle);
-    if (it == circleIdToSettingsId.end())
-        return;
-
     friendCircle[f] = circle;
-    friendSettings.setFriendCircleID(f->getPublicKey(), circleIdToSettingsId[circle]);
+    friendSettings.setFriendCircleID(f->getPublicKey(), circle->getSettingsId({}));
 
     emit friendCircleChanged(f);
 }
 
-void CircleManager::removeFriendFromCircle(Friend const* f, CircleId circle)
+void CircleManager::removeFriendFromCircle(Friend const* f, Circle* circle)
 {
+    auto friendCircleIt = friendCircle.find(f);
+    if (friendCircleIt == friendCircle.end() || friendCircleIt->second != circle) {
+        qWarning() << "Friend not in circle";
+        return;
+    }
+
     friendCircle.erase(f);
     friendSettings.setFriendCircleID(f->getPublicKey(), -1);
 
     emit friendCircleChanged(f);
 }
 
-CircleId CircleManager::getFriendCircle(Friend const* f)
+Circle* CircleManager::getFriendCircle(Friend const* f)
 {
     auto it = friendCircle.find(f);
     if (it == friendCircle.end())
-        return none;
+        return nullptr;
 
     return it->second;
-}
-
-bool CircleManager::getCircleExpanded(CircleId id) const
-{
-    auto it = circleIdToSettingsId.find(id);
-    if (it == circleIdToSettingsId.end())
-        return false;
-
-    return circleSettings.getCircleExpanded(it->second);
-}
-
-void CircleManager::setCircleExpanded(CircleId id, bool expanded)
-{
-    auto it = circleIdToSettingsId.find(id);
-    if (it == circleIdToSettingsId.end())
-        return;
-
-    circleSettings.setCircleExpanded(it->second, expanded);
-
-    emit circleExpandedChanged(id);
 }
 
 void CircleManager::loadCircles()
@@ -163,9 +140,7 @@ void CircleManager::loadCircles()
     auto circleCount = circleSettings.getCircleCount();
     for (int i = 0; i < circleCount; ++i)
     {
-        auto circleId = CircleId(nextId++);
-        settingsIdToCircleId.push_back(circleId);
-        circleIdToSettingsId[circleId] = i;
+        circles.push_back(std::unique_ptr<Circle>(new Circle(circleSettings, i, {})));
     }
 }
 
@@ -177,14 +152,47 @@ void CircleManager::loadFriendCircles(const std::vector<const Friend*>& initialF
         if (id == -1)
             continue;
 
-        if (id >= settingsIdToCircleId.size()) {
+        auto circleIt = std::find_if(circles.begin(), circles.end(), [&] (std::unique_ptr<Circle>& circle) {
+            return circle->getSettingsId({}) == id;
+        });
+
+        if (circleIt == circles.end()) {
             qWarning() << "Unknown circle id";
             continue;
         }
-        auto circleId = settingsIdToCircleId[id];
 
-        friendCircle[f] = circleId;
+        friendCircle[f] = circleIt->get();
     }
 }
 
-constexpr CircleId CircleManager::none;
+int Circle::getSettingsId(CircleManagerKey)
+{
+    return settingsId;
+}
+
+void Circle::setSettingsId(int settingsId, CircleManagerKey)
+{
+    this->settingsId = settingsId;
+}
+
+QString Circle::getName()
+{
+    return circleSettings.getCircleName(settingsId);
+}
+
+void Circle::setName(QString name)
+{
+    circleSettings.setCircleName(settingsId, name);
+    emit nameChanged();
+}
+
+bool Circle::getExpanded() const
+{
+    return circleSettings.getCircleExpanded(settingsId);
+}
+
+void Circle::setExpanded(bool expanded)
+{
+    circleSettings.setCircleExpanded(settingsId, expanded);
+    emit expandedChanged();
+}

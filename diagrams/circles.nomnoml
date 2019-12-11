@@ -13,21 +13,30 @@
 
 [CircleManager|
     + CircleManager(IFriendSettings& friendSettings, ICircleSettings& circleSettings)
-	+ std::vector<CircleId> getCircles()
-	+ CircleId addCircle()
-	+ void removeCircle(CircleId)
-	+ QString getCircleName(CircleId)
-	+ void setCircleName(CircleId)
-	+ void addFriendToCircle(Friend const*, CircleId)
-	+ void removeFriendFromCircle(Firend const*, CircleId) 
-	+ CircleId getFriendCircle(Friend const*)|
+	+ std::vector<Circle*> getCircles()
+	+ Circle* addCircle()
+	+ void removeCircle(Circle*)
+	+ void setCircleName(Circle*)
+	+ void setCircleExpanded(Circle*, bool)
+	+ void addFriendToCircle(Friend const*, Circle*)
+	+ void removeFriendFromCircle(Firend const*, Circle*)
+	+ Circle* getFriendCircle(Friend const*)|
 signals:
     + void circlesChanged()
 	+ void circleNameChanged(CircleId)
 	+ void circleFriendsChanged(CircleId)
 ]
 
+[Circle|
+properties:
+	- QString name (RO)
+	- bool expanded (RO) |
+	+ QString getName()
+	+ bool getExpanded()]
+
+[CircleManager] -- [Circle]
 [CircleManager] o- [IFriendSettings]
 [CircleManager] o- [ICircleSettings]
 
 [FriendListWidget] o- [CircleManager]
+[FriendListWidget] o- [Circle]

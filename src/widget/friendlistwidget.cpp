@@ -40,15 +40,18 @@
 class FriendListModel : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(QList<QObject*> friends READ getFriends NOTIFY friendsChanged)
+    Q_PROPERTY(QQmlListProperty<Friend> friends READ getFriends NOTIFY friendsChanged)
     Q_PROPERTY(QList<QObject*> groups READ getGroups NOTIFY groupsChanged)
-    Q_PROPERTY(QObject* circleManager MEMBER circleManager);
+    Q_PROPERTY(QList<QObject*> circles READ getCircles NOTIFY circlesChanged)
+    Q_PROPERTY(QObject* circleManager READ getCircleManager);
 public:
-
     FriendListModel(CircleManager* circleManager, QObject* parent = nullptr)
         : QObject(parent)
         , circleManager(circleManager)
-    {}
+    {
+        connect(circleManager, &CircleManager::circlesChanged, this, &FriendListModel::onCirclesChanged);
+        onCirclesChanged();
+    }
 
     void addFriend(Friend* f)
     {
@@ -87,9 +90,16 @@ public:
         emit groupsChanged();
     }
 
+private slots:
+    void onCirclesChanged()
+    {
+        circles = circleManager->getCircles();
+    }
+
 signals:
     void friendsChanged();
     void groupsChanged();
+    void circlesChanged();
 
 public slots:
     QList<QObject*> getFriends()
@@ -110,10 +120,25 @@ public slots:
         return ret;
     }
 
+    QList<QObject*> getCircles()
+    {
+        QList<QObject*> ret;
+        std::transform(circles.begin(), circles.end(), std::back_inserter(ret), [] (Circle* circle) {
+            return static_cast<QObject*>(circle);
+        });
+        return ret;
+    }
+
+    QObject* getCircleManager()
+    {
+        return circleManager;
+    }
+
 private:
     std::vector<Friend*> friends;
     std::vector<Group*> groups;
-    QObject* circleManager;
+    std::vector<Circle*> circles;
+    CircleManager* circleManager;
 };
 
 FriendListWidget::FriendListWidget(QWidget* parent, CircleManager* circleManager, bool groupsOnTop)

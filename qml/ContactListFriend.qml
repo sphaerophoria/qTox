@@ -6,6 +6,10 @@ Item {
     width: parent.width
     height: 20
 
+    Component.onCompleted: {
+        console.log(friendListModel.circleManager.getFriendCircle(modelData.contact))
+    }
+
     RowLayout {
         anchors.fill: parent
         spacing: 0
