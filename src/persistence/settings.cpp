@@ -164,6 +164,7 @@ void Settings::loadGlobal()
         enableIPv6 = s.value("enableIPv6", true).toBool();
         forceTCP = s.value("forceTCP", false).toBool();
         enableLanDiscovery = s.value("enableLanDiscovery", true).toBool();
+        experimentalChatLayout = s.value("experimentalChatLayout", false).toBool();
     }
     s.endGroup();
 
@@ -643,6 +644,7 @@ void Settings::saveGlobal()
         s.setValue("forceTCP", forceTCP);
         s.setValue("enableLanDiscovery", enableLanDiscovery);
         s.setValue("dbSyncType", static_cast<int>(dbSyncType));
+        s.setValue("experimentalChatLayout", experimentalChatLayout);
     }
     s.endGroup();
 
@@ -1087,6 +1089,22 @@ void Settings::setSpellCheckingEnabled(bool newValue)
         emit statusChangeNotificationEnabledChanged(statusChangeNotificationEnabled);
     }
 }
+
+bool Settings::getExperimentalChatLayout()
+{
+    QMutexLocker locker{&bigLock};
+    return experimentalChatLayout;
+}
+
+void Settings::setExperimentalChatLayout(bool enable)
+{
+    QMutexLocker locker{&bigLock};
+    if (enable != experimentalChatLayout) {
+        experimentalChatLayout = enable;
+        emit experimentalChatLayoutChanged(enable);
+    }
+}
+
 
 bool Settings::getNotifySound() const
 {

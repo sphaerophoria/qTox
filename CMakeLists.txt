@@ -442,6 +442,8 @@ set(${PROJECT_NAME}_SOURCES
   src/widget/form/addfriendform.h
   src/widget/form/chatform.cpp
   src/widget/form/chatform.h
+  src/widget/form/experimentalchatform.h
+  src/widget/form/experimentalchatform.cpp
   src/widget/form/filesform.cpp
   src/widget/form/filesform.h
   src/widget/form/genericchatform.cpp

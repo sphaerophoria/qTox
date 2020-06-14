@@ -71,6 +71,7 @@
 #include "src/widget/contentdialogmanager.h"
 #include "src/widget/form/addfriendform.h"
 #include "src/widget/form/chatform.h"
+#include "src/widget/form/experimentalchatform.h"
 #include "src/widget/form/filesform.h"
 #include "src/widget/form/groupinviteform.h"
 #include "src/widget/form/profileform.h"
@@ -458,6 +459,7 @@ void Widget::init()
             &FriendListWidget::onCompactChanged);
     connect(&settings, &Settings::groupchatPositionChanged, contactListWidget,
             &FriendListWidget::onGroupchatPositionChanged);
+    connect(&settings, &Settings::experimentalChatLayoutChanged, this, &Widget::onExperimentalChatFormChanged);
 
     reloadTheme();
     updateIcons();
@@ -695,6 +697,42 @@ void Widget::onCoreChanged(Core& core)
     connect(this, &Widget::changeGroupTitle, &core, &Core::changeGroupTitle);
 
     sharedMessageProcessorParams.setPublicKey(core.getSelfPublicKey().toString());
+}
+
+void Widget::onExperimentalChatFormChanged(bool enable)
+{
+    if (enable)
+    {
+        auto it = chatForms.begin();
+        while (it != chatForms.end()) {
+            delete it.value();
+            it = chatForms.erase(it);
+        }
+
+        for (auto const f : FriendList::getAllFriends()) {
+            experimentalChatForms[f->getPublicKey()] = std::make_shared<ExperimentalChatForm>();
+        }
+    }
+    else
+    {
+        experimentalChatForms.clear();
+
+        for (auto const f : FriendList::getAllFriends()) {
+            auto friendPk = f->getPublicKey();
+            auto friendForm = new ChatForm(profile, f, *friendChatLogs[friendPk], *friendMessageDispatchers[friendPk]);
+            chatForms[friendPk] = friendForm;
+            auto widget = friendWidgets[friendPk];
+            connect(friendForm, &ChatForm::updateFriendActivity, this, &Widget::updateFriendActivity);
+            connect(friendForm, &ChatForm::incomingNotification, this, &Widget::incomingNotification);
+            connect(friendForm, &ChatForm::outgoingNotification, this, &Widget::outgoingNotification);
+            connect(friendForm, &ChatForm::stopNotification, this, &Widget::onStopNotification);
+            connect(friendForm, &ChatForm::endCallNotification, this, &Widget::onCallEnd);
+            connect(friendForm, &ChatForm::rejectCall, this, &Widget::onRejectCall);
+            connect(widget, &FriendWidget::chatroomWidgetClicked, friendForm, &ChatForm::focusInput);
+            connect(widget, &FriendWidget::friendHistoryRemoved, friendForm, &ChatForm::clearChatArea);
+        }
+    }
+
 }
 
 void Widget::onConnected()
@@ -1111,7 +1149,7 @@ void Widget::dispatchFileSendFailed(uint32_t friendId, const QString& fileName)
     const auto& friendPk = FriendList::id2Key(friendId);
 
     auto chatForm = chatForms.find(friendPk);
-    if (chatForm == chatForms.end()) {
+    if (chatForm == chatForms.end() || !chatForm.value()) {
         return;
     }
 
@@ -1147,20 +1185,39 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     auto chatHistory =
         std::make_shared<ChatHistory>(*newfriend, history, *core, Settings::getInstance(),
                                       *friendMessageDispatcher);
-    auto friendForm = new ChatForm(profile, newfriend, *chatHistory, *friendMessageDispatcher);
-    connect(friendForm, &ChatForm::updateFriendActivity, this, &Widget::updateFriendActivity);
 
     friendMessageDispatchers[friendPk] = friendMessageDispatcher;
     friendChatLogs[friendPk] = chatHistory;
     friendChatrooms[friendPk] = chatroom;
     friendWidgets[friendPk] = widget;
-    chatForms[friendPk] = friendForm;
 
-    const auto activityTime = settings.getFriendActivity(friendPk);
-    const auto chatTime = friendForm->getLatestTime();
-    if (chatTime > activityTime && chatTime.isValid()) {
-        settings.setFriendActivity(friendPk, chatTime);
+    if (settings.getExperimentalChatLayout()) {
+        auto friendForm = std::make_shared<ExperimentalChatForm>();
+        experimentalChatForms[friendPk] = friendForm;
+    } else {
+        auto friendForm = new ChatForm(profile, newfriend, *chatHistory, *friendMessageDispatcher);
+        chatForms[friendPk] = friendForm;
+        connect(friendForm, &ChatForm::updateFriendActivity, this, &Widget::updateFriendActivity);
+        connect(friendForm, &ChatForm::incomingNotification, this, &Widget::incomingNotification);
+        connect(friendForm, &ChatForm::outgoingNotification, this, &Widget::outgoingNotification);
+        connect(friendForm, &ChatForm::stopNotification, this, &Widget::onStopNotification);
+        connect(friendForm, &ChatForm::endCallNotification, this, &Widget::onCallEnd);
+        connect(friendForm, &ChatForm::rejectCall, this, &Widget::onRejectCall);
+        connect(widget, &FriendWidget::chatroomWidgetClicked, friendForm, &ChatForm::focusInput);
+        connect(widget, &FriendWidget::friendHistoryRemoved, friendForm, &ChatForm::clearChatArea);
     }
+
+    auto activityTime = settings.getFriendActivity(friendPk);
+    if (chatHistory->getFirstIdx() != chatHistory->getNextIdx()) {
+        const auto& lastMessage = chatHistory->at(chatHistory->getNextIdx() - 1);
+        const auto chatTime = lastMessage.getTimestamp();
+        if (chatTime.isValid() && chatTime > activityTime) {
+            activityTime = chatTime;
+        }
+    }
+
+    settings.setFriendActivity(friendPk, activityTime);
+
 
     contactListWidget->addFriendWidget(widget, Status::Status::Offline,
                                        settings.getFriendCircleID(friendPk));
@@ -1178,16 +1235,9 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     connect(newfriend, &Friend::aliasChanged, this, &Widget::onFriendAliasChanged);
     connect(newfriend, &Friend::displayedNameChanged, this, &Widget::onFriendDisplayedNameChanged);
 
-    connect(friendForm, &ChatForm::incomingNotification, this, &Widget::incomingNotification);
-    connect(friendForm, &ChatForm::outgoingNotification, this, &Widget::outgoingNotification);
-    connect(friendForm, &ChatForm::stopNotification, this, &Widget::onStopNotification);
-    connect(friendForm, &ChatForm::endCallNotification, this, &Widget::onCallEnd);
-    connect(friendForm, &ChatForm::rejectCall, this, &Widget::onRejectCall);
 
     connect(widget, &FriendWidget::newWindowOpened, this, &Widget::openNewDialog);
     connect(widget, &FriendWidget::chatroomWidgetClicked, this, &Widget::onChatroomWidgetClicked);
-    connect(widget, &FriendWidget::chatroomWidgetClicked, friendForm, &ChatForm::focusInput);
-    connect(widget, &FriendWidget::friendHistoryRemoved, friendForm, &ChatForm::clearChatArea);
     connect(widget, &FriendWidget::copyFriendIdToClipboard, this, &Widget::copyFriendIdToClipboard);
     connect(widget, &FriendWidget::contextMenuCalled, widget, &FriendWidget::onContextMenuCalled);
     connect(widget, SIGNAL(removeFriend(const ToxPk&)), this, SLOT(removeFriend(const ToxPk&)));
@@ -1199,7 +1249,9 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     // Try to get the avatar from the cache
     QPixmap avatar = Nexus::getProfile()->loadAvatar(friendPk);
     if (!avatar.isNull()) {
-        friendForm->onAvatarChanged(friendPk, avatar);
+        auto friendForm = chatForms.find(friendPk);
+        if (friendForm != chatForms.end())
+            friendForm.value()->onAvatarChanged(friendPk, avatar);
         widget->onAvatarSet(friendPk, avatar);
     }
 
@@ -1258,7 +1310,9 @@ void Widget::onFriendStatusMessageChanged(int friendId, const QString& message)
     f->setStatusMessage(str);
 
     friendWidgets[friendPk]->setStatusMsg(str);
-    chatForms[friendPk]->setStatusMessage(str);
+    auto form = chatForms.find(friendPk);
+    if (form != chatForms.end())
+        form.value()->setStatusMessage(str);
 }
 
 void Widget::onFriendDisplayedNameChanged(const QString& displayed)
@@ -1321,12 +1375,14 @@ void Widget::openDialog(GenericChatroomWidget* widget, bool newWindow)
     widget->resetEventFlags();
     widget->updateStatusLight();
 
-    GenericChatForm* form;
+    GenericChatForm* form = nullptr;
     GroupId id;
     const Friend* frnd = widget->getFriend();
     const Group* group = widget->getGroup();
     if (frnd) {
-        form = chatForms[frnd->getPublicKey()];
+        auto formIt = chatForms.find(frnd->getPublicKey());
+        if (formIt != chatForms.end())
+            form = formIt.value();
     } else {
         id = group->getPersistentId();
         form = groupChatForms[id].data();
@@ -1336,7 +1392,7 @@ void Widget::openDialog(GenericChatroomWidget* widget, bool newWindow)
     chatFormIsSet = ContentDialogManager::getInstance()->contactWidgetExists(id);
 
 
-    if ((chatFormIsSet || form->isVisible()) && !newWindow) {
+    if ((chatFormIsSet || (form && form->isVisible())) && !newWindow) {
         return;
     }
 
@@ -1365,7 +1421,14 @@ void Widget::openDialog(GenericChatroomWidget* widget, bool newWindow)
     } else {
         hideMainForms(widget);
         if (frnd) {
-            chatForms[frnd->getPublicKey()]->show(contentLayout);
+            if (form)
+                form->show(contentLayout);
+            else {
+                auto experimentalForm = experimentalChatForms.find(frnd->getPublicKey());
+                if (experimentalForm != experimentalChatForms.end()) {
+                    experimentalForm->second->show(contentLayout);
+                }
+            }
         } else {
             groupChatForms[group->getPersistentId()]->show(contentLayout);
         }
@@ -1407,10 +1470,12 @@ void Widget::addFriendDialog(const Friend* frnd, ContentDialog* dialog)
         onAddClicked();
     }
 
-    auto form = chatForms[friendPk];
+    auto form = chatForms.find(friendPk);
+    if (form == chatForms.end())
+        return;
     auto chatroom = friendChatrooms[friendPk];
     FriendWidget* friendWidget =
-        ContentDialogManager::getInstance()->addFriendToDialog(dialog, chatroom, form);
+        ContentDialogManager::getInstance()->addFriendToDialog(dialog, chatroom, form.value());
 
     friendWidget->setStatusMsg(widget->getStatusMsg());
 
@@ -1748,9 +1813,14 @@ void Widget::removeFriend(Friend* f, bool fake)
     friendWidgets.remove(friendPk);
     delete widget;
 
-    auto chatForm = chatForms[friendPk];
-    chatForms.remove(friendPk);
-    delete chatForm;
+    auto chatForm = chatForms.find(friendPk);
+    if (chatForm != chatForms.end())
+    {
+        delete chatForm.value();
+        chatForms.erase(chatForm);
+    }
+
+    experimentalChatForms.erase(friendPk);
 
     delete f;
     if (contentLayout && contentLayout->mainHead->layout()->isEmpty()) {
@@ -2339,7 +2409,10 @@ void Widget::onFriendTypingChanged(uint32_t friendnumber, bool isTyping)
         return;
     }
 
-    chatForms[f->getPublicKey()]->setFriendTyping(isTyping);
+    auto form = chatForms.find(f->getPublicKey());
+    if (form != chatForms.end()) {
+        form.value()->setFriendTyping(isTyping);
+    }
 }
 
 void Widget::onSetShowSystemTray(bool newValue)
@@ -2442,7 +2515,9 @@ void Widget::reloadTheme()
 
 
     for (auto f : FriendList::getAllFriends()) {
-        chatForms[f->getPublicKey()]->reloadTheme();
+        auto form = chatForms.find(f->getPublicKey());
+        if (form != chatForms.end())
+            form.value()->reloadTheme();
     }
 
     for (auto g : GroupList::getAllGroups()) {
@@ -2679,7 +2754,9 @@ void Widget::focusChatInput()
 {
     if (activeChatroomWidget) {
         if (const Friend* f = activeChatroomWidget->getFriend()) {
-            chatForms[f->getPublicKey()]->focusInput();
+            auto form = chatForms.find(f->getPublicKey());
+            if (form != chatForms.end())
+                form.value()->focusInput();
         } else if (Group* g = activeChatroomWidget->getGroup()) {
             groupChatForms[g->getPersistentId()]->focusInput();
         }

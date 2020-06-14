@@ -51,6 +51,7 @@ class AddFriendForm;
 class AlSink;
 class Camera;
 class ChatForm;
+class ExperimentalChatForm;
 class CircleWidget;
 class ContentDialog;
 class ContentLayout;
@@ -193,6 +194,7 @@ public slots:
     void refreshPeerListsLocal(const QString& username);
     void onUpdateAvailable();
     void onCoreChanged(Core& core);
+    void onExperimentalChatFormChanged(bool enable);
 
 signals:
     void friendRequestAccepted(const ToxPk& friendPk);
@@ -343,6 +345,7 @@ private:
     QMap<ToxPk, std::shared_ptr<ChatHistory>> friendChatLogs;
     QMap<ToxPk, std::shared_ptr<FriendChatroom>> friendChatrooms;
     QMap<ToxPk, ChatForm*> chatForms;
+    std::map<ToxPk, std::shared_ptr<ExperimentalChatForm>> experimentalChatForms;
 
     QMap<GroupId, GroupWidget*> groupWidgets;
     QMap<GroupId, std::shared_ptr<GroupMessageDispatcher>> groupMessageDispatchers;

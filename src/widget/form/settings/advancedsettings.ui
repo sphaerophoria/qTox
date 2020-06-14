@@ -24,8 +24,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>489</width>
-        <height>549</height>
+        <width>485</width>
+        <height>545</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -205,6 +205,17 @@
           </item>
          </layout>
         </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="experimentalGroup">
+         <item>
+          <widget class="QCheckBox" name="cbExperimentalChat">
+           <property name="text">
+            <string>Enable experimental chat layout</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <widget class="QPushButton" name="resetButton">

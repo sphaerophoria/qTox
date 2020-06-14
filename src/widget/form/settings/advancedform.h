@@ -52,6 +52,7 @@ private slots:
     void on_proxyAddr_editingFinished();
     void on_proxyPort_valueChanged(int port);
     void on_proxyType_currentIndexChanged(int index);
+    void on_cbExperimentalChat_stateChanged();
 
 private:
     void retranslateUi();

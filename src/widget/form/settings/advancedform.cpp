@@ -67,6 +67,8 @@ AdvancedForm::AdvancedForm()
     bodyUI->cbEnableLanDiscovery->setChecked(s.getEnableLanDiscovery() && udpEnabled);
     bodyUI->cbEnableLanDiscovery->setEnabled(udpEnabled);
 
+    bodyUI->cbExperimentalChat->setChecked(s.getExperimentalChatLayout());
+
     QString warningBody = tr("Unless you %1 know what you are doing, "
                              "please do %2 change anything here. Changes "
                              "made here may lead to problems with qTox, and even "
@@ -212,6 +214,11 @@ void AdvancedForm::on_proxyType_currentIndexChanged(int index)
     bodyUI->cbEnableUDP->setChecked(!proxyEnabled);
 
     Settings::getInstance().setProxyType(proxytype);
+}
+
+void AdvancedForm::on_cbExperimentalChat_stateChanged()
+{
+    Settings::getInstance().setExperimentalChatLayout(bodyUI->cbExperimentalChat->isChecked());
 }
 
 /**

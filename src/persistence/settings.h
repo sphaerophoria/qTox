@@ -99,6 +99,8 @@ class Settings : public QObject,
                    setStatusChangeNotificationEnabled NOTIFY statusChangeNotificationEnabledChanged FINAL)
     Q_PROPERTY(bool spellCheckingEnabled READ getSpellCheckingEnabled WRITE setSpellCheckingEnabled
                    NOTIFY spellCheckingEnabledChanged FINAL)
+    Q_PROPERTY(bool experimentalChatLayout READ getExperimentalChatLayout WRITE setExperimentalChatLayout
+                   NOTIFY experimentalChatLayoutChanged FINAL)
 
     // Privacy
     Q_PROPERTY(bool typingNotification READ getTypingNotification WRITE setTypingNotification NOTIFY
@@ -224,6 +226,7 @@ signals:
     void dateFormatChanged(const QString& format);
     void statusChangeNotificationEnabledChanged(bool enabled);
     void spellCheckingEnabledChanged(bool enabled);
+    void experimentalChatLayoutChanged(bool enabled);
 
     // Privacy
     void typingNotificationChanged(bool enabled);
@@ -455,6 +458,9 @@ public:
     bool getSpellCheckingEnabled() const;
     void setSpellCheckingEnabled(bool newValue);
 
+    bool getExperimentalChatLayout();
+    void setExperimentalChatLayout(bool enabled);
+
     // Privacy
     bool getTypingNotification() const;
     void setTypingNotification(bool enabled);
@@ -649,6 +655,8 @@ private:
     QString dateFormat;
     bool statusChangeNotificationEnabled;
     bool spellCheckingEnabled;
+
+    bool experimentalChatLayout;
 
     // Privacy
     bool typingNotification;
