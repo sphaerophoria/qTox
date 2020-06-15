@@ -3,11 +3,14 @@
 #include <QQuickWidget>
 
 class ContentLayout;
+class IChatLog;
 
 class ExperimentalChatForm : public QQuickWidget
 {
 public:
-    ExperimentalChatForm(QWidget* parent = nullptr);
+    ExperimentalChatForm(IChatLog& chatLog, QWidget* parent = nullptr);
 
     void show(ContentLayout* contentLayout);
+private:
+
 };

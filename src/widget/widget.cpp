@@ -710,7 +710,8 @@ void Widget::onExperimentalChatFormChanged(bool enable)
         }
 
         for (auto const f : FriendList::getAllFriends()) {
-            experimentalChatForms[f->getPublicKey()] = std::make_shared<ExperimentalChatForm>();
+            auto friendPk = f->getPublicKey();
+            experimentalChatForms[friendPk] = std::make_shared<ExperimentalChatForm>(*friendChatLogs[friendPk]);
         }
     }
     else
@@ -1192,7 +1193,7 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     friendWidgets[friendPk] = widget;
 
     if (settings.getExperimentalChatLayout()) {
-        auto friendForm = std::make_shared<ExperimentalChatForm>();
+        auto friendForm = std::make_shared<ExperimentalChatForm>(*chatHistory);
         experimentalChatForms[friendPk] = friendForm;
     } else {
         auto friendForm = new ChatForm(profile, newfriend, *chatHistory, *friendMessageDispatcher);

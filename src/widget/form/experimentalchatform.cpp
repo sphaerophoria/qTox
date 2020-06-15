@@ -2,8 +2,9 @@
 #include "experimentalchatform.h"
 
 #include "src/widget/contentlayout.h"
+#include "src/model/ichatlog.h"
 
-ExperimentalChatForm::ExperimentalChatForm(QWidget* parent)
+ExperimentalChatForm::ExperimentalChatForm(IChatLog&, QWidget* parent)
     : QQuickWidget(parent)
 {
     setSource(QUrl::fromLocalFile("../qml/friendchatform.qml"));
