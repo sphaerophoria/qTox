@@ -4,6 +4,7 @@
 
 class ContentLayout;
 class IChatLog;
+class ExperimentalChatLogModel;
 
 class ExperimentalChatForm : public QQuickWidget
 {
@@ -12,5 +13,5 @@ public:
 
     void show(ContentLayout* contentLayout);
 private:
-
+    ExperimentalChatLogModel* chatLogModel;
 };
