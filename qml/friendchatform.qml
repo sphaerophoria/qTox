@@ -14,55 +14,62 @@ ColumnLayout {
         color: 'lightgrey'
     }
     // Chatform
-    Rectangle {
-        Layout.fillHeight: true
+    ScrollView {
         Layout.fillWidth: true
-        id: rectangle
-        ScrollView {
-            ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
-            ScrollBar.vertical.policy: ScrollBar.AlwaysOn
+        Layout.fillHeight: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
+        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
+        onWidthChanged: {
+            console.log("Scrollview width: " + width)
+        }
+
+        ListView {
+            property int senderWidth
+            property int timestampWidth
+
+            id: tableView
+
             anchors.fill: parent
+            boundsBehavior: Flickable.StopAtBounds
+            clip: true
 
-            TableView {
-                property int nameWidth;
-                property int dateWidth;
+            model: chatModel
+            delegate: RowLayout {
+                anchors.right: parent.right
+                anchors.left: parent.left
+                spacing: 5
 
-                id: tableView
+                Text {
+                    text: {
+                        if (index > 0)  {
+                            var prevIndex = chatModel.index(index - 1, 0)
+                            var prevSender = chatModel.data(prevIndex, 0x102)
+                            if (prevSender == sender) {
+                                return ""
+                            }
+                        }
 
-                anchors.fill: parent
-                boundsBehavior: Flickable.StopAtBounds
-                columnSpacing: 5
-                columnWidthProvider: function (column) {
-                    if (column == 0) {
-                        return Math.min(tableView.nameWidth, 50)
+                        return displayName
                     }
-                    else if (column == 1) {
-                        return width - columnWidthProvider(0) - columnWidthProvider(2) - columnSpacing * 2
-                    }
-                    else if (column == 2) {
-                        return Math.min(tableView.dateWidth, 50)
-                    }
-                }
-                onWidthChanged: forceLayout()
-
-                Component.onCompleted: {
-                    nameWidth = 20
-                    dateWidth = 20
-                    forceLayout()
-                }
-
-                model: chatModel
-                delegate: Text {
-                    text: display
                     clip: true
 
-                    Component.onCompleted: {
-                        if (column == 0) {
-                            tableView.nameWidth = Math.max(contentWidth, tableView.nameWidth)
-                        }
-                        else if (column == 2) {
-                            tableView.dateWidth = Math.max(contentWidth, tableView.dateWidth)
-                        }
+                    Layout.preferredWidth: {
+                        tableView.senderWidth = Math.max(contentWidth, tableView.senderWidth)
+                        return Math.min(tableView.senderWidth, 100)
+                    }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: message
+                    wrapMode: Text.Wrap
+                }
+                Text {
+                    text: Qt.formatTime(timestamp, "hh:mm:ss")
+                    clip: true
+                    Layout.alignment: Qt.AlignRight
+                    Layout.preferredWidth: {
+                        tableView.timestampWidth = Math.max(contentWidth, tableView.timestampWidth)
+                        return tableView.timestampWidth
                     }
                 }
             }
