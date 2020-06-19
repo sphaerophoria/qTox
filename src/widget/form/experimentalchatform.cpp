@@ -3,6 +3,7 @@
 
 #include "src/widget/contentlayout.h"
 #include "src/model/ichatlog.h"
+#include "src/model/imessagedispatcher.h"
 
 #include <QAbstractItemModel>
 #include <QQmlContext>
@@ -32,6 +33,7 @@ public:
             return QVariant();
 
         auto& chatLogItem = chatLog.at(chatLog.getFirstIdx() + index.row());
+
         switch (role)
         {
         case message:
@@ -66,12 +68,14 @@ private:
 };
 
 
-ExperimentalChatForm::ExperimentalChatForm(IChatLog& chatLog, QWidget* parent)
+ExperimentalChatForm::ExperimentalChatForm(IChatLog& chatLog, IMessageDispatcher& messageDispatcher, QWidget* parent)
     : QQuickWidget(parent)
     , chatLogModel(new ExperimentalChatLogModel(chatLog, parent))
+    , messageDispatcher(messageDispatcher)
 {
 
     engine()->rootContext()->setContextProperty("chatModel", chatLogModel);
+    engine()->rootContext()->setContextProperty("messageDispatcher", &messageDispatcher);
     setSource(QUrl::fromLocalFile("../qml/friendchatform.qml"));
     setAttribute(Qt::WA_AlwaysStackOnTop);
     setClearColor(Qt::transparent);

@@ -14,32 +14,48 @@ ColumnLayout {
         color: 'lightgrey'
     }
     // Chatform
-    ScrollView {
+    Item {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        ScrollBar.horizontal.policy: ScrollBar.AlwaysOn
-        ScrollBar.vertical.policy: ScrollBar.AlwaysOff
-        onWidthChanged: {
-            console.log("Scrollview width: " + width)
-        }
-
         ListView {
+            anchors {
+                top: parent.top
+                bottom: parent.bottom
+                left: parent.left
+                right: parent.right
+                rightMargin: listViewScrollBar.width
+
+            }
+
             property int senderWidth
             property int timestampWidth
 
             id: tableView
 
-            anchors.fill: parent
             boundsBehavior: Flickable.StopAtBounds
             clip: true
 
+            highlightMoveDuration: 1
+            highlightMoveVelocity: -1
+            spacing: 5
+
             model: chatModel
             delegate: RowLayout {
-                anchors.right: parent.right
-                anchors.left: parent.left
+                anchors.left: {
+                    if (parent) {
+                        return parent.left
+                    }
+                }
+                anchors.right: {
+                    if (parent) {
+                        return parent.right
+                    }
+                }
                 spacing: 5
 
-                Text {
+                TextEdit {
+                    readOnly: true
+                    selectByMouse: true
                     text: {
                         if (index > 0)  {
                             var prevIndex = chatModel.index(index - 1, 0)
@@ -53,26 +69,44 @@ ColumnLayout {
                     }
                     clip: true
 
-                    Layout.preferredWidth: {
-                        tableView.senderWidth = Math.max(contentWidth, tableView.senderWidth)
-                        return Math.min(tableView.senderWidth, 100)
+                    Layout.preferredWidth: tableView.senderWidth
+
+                    Component.onCompleted: {
+                        tableView.senderWidth = Math.max(tableView.senderWidth, contentWidth)
                     }
                 }
-                Text {
+                TextEdit {
+                    readOnly: true
+                    selectByMouse: true
                     Layout.fillWidth: true
                     text: message
                     wrapMode: Text.Wrap
                 }
-                Text {
+                TextEdit {
+                    readOnly: true
+                    selectByMouse: true
                     text: Qt.formatTime(timestamp, "hh:mm:ss")
                     clip: true
                     Layout.alignment: Qt.AlignRight
-                    Layout.preferredWidth: {
-                        tableView.timestampWidth = Math.max(contentWidth, tableView.timestampWidth)
-                        return tableView.timestampWidth
+                    Layout.preferredWidth: tableView.timestampWidth
+
+                    Component.onCompleted: {
+                        tableView.timestampWidth = Math.max(tableView.timestampWidth, contentWidth)
                     }
                 }
             }
+
+            Component.onCompleted: {
+                tableView.currentIndex = count - 1
+            }
+            ScrollBar.vertical: listViewScrollBar
+        }
+
+        ScrollBar {
+            id: listViewScrollBar
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
         }
     }
     Rectangle {
