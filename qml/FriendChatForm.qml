@@ -16,7 +16,7 @@ ColumnLayout {
 
     // chatform header
     Text {
-        text: "header"
+        text: contact.name
     }
     Rectangle {
         Layout.fillWidth: true
@@ -36,10 +36,17 @@ ColumnLayout {
     }
     // Text area
     RowLayout {
+        Layout.maximumHeight: 100
         RowLayout {
             Layout.fillHeight: false
 
             TextArea {
+                property var sendMessage: function() {
+                    root.messageSent(text)
+                    text = ""
+                }
+
+                id: chatTextArea
                 Layout.alignment: Qt.AlignLeft
                 Layout.fillWidth: true
                 Layout.fillHeight: true
@@ -48,11 +55,9 @@ ColumnLayout {
                 placeholderText: "Type your message here..."
 
                 Keys.onPressed: {
-                    console.log(event.modifiers)
                     if (event.key == Qt.Key_Return && event.modifiers == Qt.NoModifier) {
                         event.accepted = true
-                        root.messageSent(text)
-                        text = ""
+                        sendMessage()
                     }
                 }
             }
@@ -68,7 +73,11 @@ ColumnLayout {
         }
         Button {
             Layout.alignment: Qt.AlignRight
+            Layout.fillHeight: true
             icon.source: "../themes/default/chatForm/sendButton.svg"
+            onPressed: {
+                chatTextArea.sendMessage()
+            }
         }
     }
 }

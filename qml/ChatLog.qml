@@ -20,57 +20,81 @@ Item {
         spacing: 5
 
         model: root.model
-        delegate: RowLayout {
+        delegate: ColumnLayout {
+            property var prevIndex: index > 0 ? chatModel.index(index - 1, 0) : undefined
             anchors.left: parent ? parent.left : undefined
             anchors.right: parent ? parent.right : undefined
-            spacing: 5
 
             TextEdit {
+                Layout.leftMargin: listView.senderWidth
+                Layout.topMargin: 10
+                Layout.bottomMargin: 10
                 readOnly: true
                 selectByMouse: true
-                text: {
-                    if (index > 0)  {
-                        var prevIndex = chatModel.index(index - 1, 0)
-                        var prevSender = chatModel.data(prevIndex, 0x102)
-                        if (prevSender == sender) {
-                            return ""
-                        }
-                    }
-
-                    return displayName ? displayName : ""
-                }
-                clip: true
-
-                Layout.preferredWidth: listView.senderWidth
-
-                Component.onCompleted: {
-                    listView.senderWidth = Math.max(listView.senderWidth, contentWidth)
-                }
-            }
-            TextEdit {
-                Layout.fillWidth: true
-
-                readOnly: true
-                selectByMouse: true
-                text: message
+                text: Qt.formatDate(timestamp, "<b>yyyy-MM-dd</b>")
                 textFormat: TextEdit.RichText
-                wrapMode: Text.Wrap
-            }
-            TextEdit {
-                readOnly: true
-                selectByMouse: true
-                text: {
-                    if (messagePending == true) {
-                        return "..."
+                visible: {
+                    if (prevIndex) {
+                        var prevDate = chatModel.data(prevIndex, 0x103)
+                        return timestamp.getDate() != prevDate.getDate() ||
+                            timestamp.getFullYear() != prevDate.getFullYear() ||
+                            timestamp.getMonth() != prevDate.getMonth()
                     }
-                    return Qt.formatTime(timestamp, "hh:mm:ss")
+                    return true
                 }
-                clip: true
-                Layout.alignment: Qt.AlignRight
-                Layout.preferredWidth: listView.timestampWidth
+            }
+            RowLayout {
+                spacing: 5
+                Layout.fillWidth: true
+                Layout.fillHeight: true
 
-                Component.onCompleted: {
-                    listView.timestampWidth = Math.max(listView.timestampWidth, contentWidth)
+                TextEdit {
+                    readOnly: true
+                    selectByMouse: true
+                    text: {
+                        if (index > 0)  {
+                            var prevIndex = chatModel.index(index - 1, 0)
+                            var prevSender = chatModel.data(prevIndex, 0x102)
+                            if (prevSender == sender) {
+                                return ""
+                            }
+                        }
+
+                        return displayName ? displayName : ""
+                    }
+                    clip: true
+
+                    Layout.preferredWidth: listView.senderWidth
+
+                    Component.onCompleted: {
+                        listView.senderWidth = Math.max(listView.senderWidth, contentWidth)
+                    }
+                }
+                TextEdit {
+                    Layout.fillWidth: true
+
+                    readOnly: true
+                    selectByMouse: true
+                    text: message
+                    textFormat: TextEdit.RichText
+                    wrapMode: Text.Wrap
+                }
+                TextEdit {
+                    readOnly: true
+                    selectByMouse: true
+                    text: {
+                        if (messagePending == true) {
+                            return "..."
+                        }
+                        return Qt.formatTime(timestamp, "hh:mm:ss")
+                    }
+                    clip: true
+                    Layout.alignment: Qt.AlignRight
+                    Layout.preferredWidth: listView.timestampWidth
+
+                    Component.onCompleted: {
+                        listView.timestampWidth = Math.max(listView.timestampWidth, contentWidth)
+                    }
                 }
             }
         }

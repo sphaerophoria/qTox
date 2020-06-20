@@ -77,8 +77,10 @@ private:
 
     void onItemUpdated(ChatLogIdx idx)
     {
-        // FIXME: somehow detect if this is a new item or an item update
         auto modelIdx = idx - chatLog.getFirstIdx();
+
+        // Remove row in case this is an update. If this is a new message this
+        // will just do nothing
         beginRemoveRows(QModelIndex(), modelIdx, modelIdx);
         endRemoveRows();
 
@@ -91,10 +93,11 @@ private:
 };
 
 
-ExperimentalChatForm::ExperimentalChatForm(IChatLog& chatLog, IMessageDispatcher& messageDispatcher, QWidget* parent)
+ExperimentalChatForm::ExperimentalChatForm(IChatLog& chatLog, IMessageDispatcher& messageDispatcher, Contact& contact, QWidget* parent)
     : QQuickWidget(parent)
     , chatLogModel(new ExperimentalChatLogModel(chatLog, parent))
     , messageDispatcher(messageDispatcher)
+    , contact(contact)
 {
     initializeQml();
 }
@@ -126,7 +129,9 @@ void ExperimentalChatForm::onReloadUi()
 
 void ExperimentalChatForm::initializeQml()
 {
-    engine()->rootContext()->setContextProperty("chatModel", chatLogModel);
+    auto rootContext = engine()->rootContext();
+    rootContext->setContextProperty("chatModel", chatLogModel);
+    rootContext->setContextProperty("contact", &contact);
     setSource(QUrl::fromLocalFile("../qml/FriendChatForm.qml"));
     setAttribute(Qt::WA_AlwaysStackOnTop);
     setClearColor(Qt::transparent);

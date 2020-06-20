@@ -6,12 +6,13 @@ class ContentLayout;
 class IChatLog;
 class IMessageDispatcher;
 class ExperimentalChatLogModel;
+class Contact;
 
 class ExperimentalChatForm : public QQuickWidget
 {
     Q_OBJECT
 public:
-    ExperimentalChatForm(IChatLog& chatLog, IMessageDispatcher& messageDispatcher, QWidget* parent = nullptr);
+    ExperimentalChatForm(IChatLog& chatLog, IMessageDispatcher& messageDispatcher, Contact& contact, QWidget* parent = nullptr);
     ~ExperimentalChatForm() = default;
 
     void show(ContentLayout* contentLayout);
@@ -24,5 +25,6 @@ private:
     void initializeQml();
     ExperimentalChatLogModel* chatLogModel;
     IMessageDispatcher& messageDispatcher;
+    Contact& contact;
     std::unique_ptr<QTimer> timer;
 };

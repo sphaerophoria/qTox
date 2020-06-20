@@ -27,6 +27,7 @@ class Contact : public QObject
 {
     Q_OBJECT
 public:
+    Q_PROPERTY(QString name WRITE setName READ getDisplayedName NOTIFY displayedNameChanged)
     virtual ~Contact() = 0;
 
     virtual void setName(const QString& name) = 0;
