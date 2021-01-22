@@ -117,6 +117,7 @@ public slots:
     void requestFriendship(const ToxId& friendAddress, const QString& message);
     void groupInviteFriend(uint32_t friendId, int groupId);
     int createGroup(uint8_t type = TOX_CONFERENCE_TYPE_AV);
+    int createGroupV2();
 
     void removeFriend(uint32_t friendId);
     void removeGroup(int groupId);
@@ -186,6 +187,8 @@ signals:
     void groupJoined(int groupnumber, GroupId groupId);
     void actionSentResult(uint32_t friendId, const QString& action, int success);
 
+    void groupV2Joined(uint32_t groupNumber);
+
     void receiptRecieved(int friedId, ReceiptNum receipt);
 
     void failedToRemoveFriend(uint32_t friendId);
@@ -216,6 +219,7 @@ private:
     static void onGroupTitleChange(Tox* tox, uint32_t groupId, uint32_t peerId,
                                    const uint8_t* cTitle, size_t length, void* vCore);
     static void onReadReceiptCallback(Tox* tox, uint32_t friendId, uint32_t receipt, void* core);
+    static void onGroupV2SelfJoin(Tox* tox, uint32_t group_number, void *user_data);
 
     void sendGroupMessageWithType(int groupId, const QString& message, Tox_Message_Type type);
     bool sendMessageWithType(uint32_t friendId, const QString& message, Tox_Message_Type type, ReceiptNum& receipt);

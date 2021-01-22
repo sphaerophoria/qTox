@@ -316,6 +316,7 @@ void Widget::init()
     connect(ui->mainSplitter, &QSplitter::splitterMoved, this, &Widget::onSplitterMoved);
     connect(addFriendForm, &AddFriendForm::friendRequested, this, &Widget::friendRequested);
     connect(groupInviteForm, &GroupInviteForm::groupCreate, core, &Core::createGroup);
+    connect(groupInviteForm, &GroupInviteForm::groupCreate, core, &Core::createGroupV2);
     connect(timer, &QTimer::timeout, this, &Widget::onUserAwayCheck);
     connect(timer, &QTimer::timeout, this, &Widget::onEventIconTick);
     connect(timer, &QTimer::timeout, this, &Widget::onTryCreateTrayIcon);

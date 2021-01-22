@@ -959,6 +959,11 @@ void Core::onReadReceiptCallback(Tox*, uint32_t friendId, uint32_t receipt, void
     emit static_cast<Core*>(core)->receiptRecieved(friendId, ReceiptNum{receipt});
 }
 
+void Core::onGroupV2SelfJoin(Tox* tox, uint32_t group_number, void *core)
+{
+    emit static_cast<Core*>(core)->groupV2Joined(group_number);
+}
+
 void Core::acceptFriendRequest(const ToxPk& friendPk)
 {
     QMutexLocker ml{&coreLoopLock};
@@ -1629,6 +1634,18 @@ int Core::createGroup(uint8_t type)
     } else {
         qWarning() << "createGroup: Unknown type " << type;
         return -1;
+    }
+}
+
+int Core::createGroupV2()
+{
+    TOX_ERR_GROUP_NEW err;
+    auto name = ToxString(getUsername());
+    ToxString defaultGroupName(QString("Untitled Group"));
+    tox_group_new(tox.get(), TOX_GROUP_PRIVACY_STATE_PRIVATE, defaultGroupName.data(), defaultGroupName.size(), name.data(), name.size(), &err);
+    if (err != TOX_ERR_GROUP_NEW_OK)
+    {
+        qWarning("Failed to create group (%u)", err);
     }
 }
 

@@ -27,6 +27,7 @@
 #include "src/widget/form/groupinvitewidget.h"
 #include "src/widget/translator.h"
 
+#include <QComboBox>
 #include <QDateTime>
 #include <QDebug>
 #include <QGroupBox>
@@ -48,13 +49,37 @@
 GroupInviteForm::GroupInviteForm()
     : headWidget(new QWidget(this))
     , headLabel(new QLabel(this))
+    , groupType(new QComboBox(this))
     , createButton(new QPushButton(this))
     , inviteBox(new QGroupBox(this))
     , scroll(new QScrollArea(this))
 {
     QVBoxLayout* layout = new QVBoxLayout(this);
-    connect(createButton, &QPushButton::clicked,
-            [this]() { emit groupCreate(TOX_CONFERENCE_TYPE_AV); });
+
+    groupType->addItem(tr("Legacy"), QVariant::fromValue(GroupType::conference_av));
+    groupType->addItem(tr("NGC"), QVariant::fromValue(GroupType::ngc));
+    groupType->setCurrentIndex(groupType->count() - 1);
+
+    connect(createButton, &QPushButton::clicked, [this]() {
+        switch (groupType->currentData().value<GroupType>())
+        {
+            case GroupType::conference_av:
+            {
+                emit groupCreate(TOX_CONFERENCE_TYPE_AV);
+                break;
+            }
+            case GroupType::ngc:
+            {
+                emit groupV2Create();
+                break;
+            }
+            default:
+            {
+                qWarning("Invalid group type selected");
+                break;
+            }
+        }
+    });
 
     QWidget* innerWidget = new QWidget(scroll);
     innerWidget->setLayout(new QVBoxLayout());
@@ -65,6 +90,7 @@ GroupInviteForm::GroupInviteForm()
     QVBoxLayout* inviteLayout = new QVBoxLayout(inviteBox);
     inviteLayout->addWidget(scroll);
 
+    layout->addWidget(groupType);
     layout->addWidget(createButton);
     layout->addWidget(inviteBox);
 

@@ -27,6 +27,7 @@ class ContentLayout;
 class GroupInvite;
 class GroupInviteWidget;
 
+class QComboBox;
 class QGroupBox;
 class QLabel;
 class QPushButton;
@@ -36,6 +37,16 @@ class QSignalMapper;
 namespace Ui {
 class MainWindow;
 }
+
+// FIXME: Find appropriate spot for this
+enum GroupType
+{
+    conference_text, // Initial tox conference implementation text only
+    conference_av, // Initial tox conference implementation audio/video group
+    ngc, // New group chats with improved features
+};
+Q_DECLARE_METATYPE(GroupType);
+
 
 class GroupInviteForm : public QWidget
 {
@@ -49,9 +60,10 @@ public:
     bool isShown() const;
 
 signals:
-    void groupCreate(uint8_t type);
+    void groupCreate(int type);
     void groupInviteAccepted(const GroupInvite& inviteInfo);
     void groupInvitesSeen();
+    void groupV2Create();
 
 protected:
     void showEvent(QShowEvent* event) final;
@@ -63,6 +75,7 @@ private:
 private:
     QWidget* headWidget;
     QLabel* headLabel;
+    QComboBox* groupType;
     QPushButton* createButton;
     QGroupBox* inviteBox;
     QList<GroupInviteWidget*> invites;
