@@ -316,7 +316,7 @@ void Widget::init()
     connect(ui->mainSplitter, &QSplitter::splitterMoved, this, &Widget::onSplitterMoved);
     connect(addFriendForm, &AddFriendForm::friendRequested, this, &Widget::friendRequested);
     connect(groupInviteForm, &GroupInviteForm::groupCreate, core, &Core::createGroup);
-    connect(groupInviteForm, &GroupInviteForm::groupCreate, core, &Core::createGroupV2);
+    connect(groupInviteForm, &GroupInviteForm::groupV2Create, core, &Core::createGroupV2);
     connect(timer, &QTimer::timeout, this, &Widget::onUserAwayCheck);
     connect(timer, &QTimer::timeout, this, &Widget::onEventIconTick);
     connect(timer, &QTimer::timeout, this, &Widget::onTryCreateTrayIcon);
@@ -696,6 +696,7 @@ void Widget::onCoreChanged(Core& core)
     connect(&core, &Core::friendTypingChanged, this, &Widget::onFriendTypingChanged);
     connect(&core, &Core::groupSentFailed, this, &Widget::onGroupSendFailed);
     connect(&core, &Core::usernameSet, this, &Widget::refreshPeerListsLocal);
+    connect(&core, &Core::groupV2Joined, this, &Widget::onGroupJoined);
     connect(this, &Widget::statusSet, &core, &Core::setStatus);
     connect(this, &Widget::friendRequested, &core, &Core::requestFriendship);
     connect(this, &Widget::friendRequestAccepted, &core, &Core::acceptFriendRequest);

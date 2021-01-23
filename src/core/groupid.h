@@ -32,3 +32,11 @@ public:
     explicit GroupId(const uint8_t* rawId);
     int getSize() const override;
 };
+
+
+class GroupV2Id : public ContactId
+{
+public:
+    int getSize() const;
+
+};

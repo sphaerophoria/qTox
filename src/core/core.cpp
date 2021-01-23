@@ -515,6 +515,7 @@ void Core::registerCallbacks(Tox* tox)
     tox_callback_conference_peer_list_changed(tox, onGroupPeerListChange);
     tox_callback_conference_peer_name(tox, onGroupPeerNameChange);
     tox_callback_conference_title(tox, onGroupTitleChange);
+    tox_callback_group_self_join(tox, onGroupV2SelfJoin);
 }
 
 /**
