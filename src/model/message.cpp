@@ -83,13 +83,9 @@ MessageProcessor::MessageProcessor(const MessageProcessor::SharedParams& sharedP
 /**
  * @brief Converts an outgoing message into one (or many) sanitized Message(s)
  */
-std::vector<Message> MessageProcessor::processOutgoingMessage(bool isAction, QString const& content, ExtensionSet extensions)
+std::vector<Message> MessageProcessor::processOutgoingMessage(bool isAction, QString const& content, ExtensionSet extensions, uint64_t maxSendingSize)
 {
     std::vector<Message> ret;
-
-    const auto maxSendingSize = extensions[ExtensionType::messages]
-        ? sharedParams.getMaxExtendedMessageSize()
-        : sharedParams.getMaxCoreMessageSize();
 
     const auto splitMsgs = splitMessage(content, maxSendingSize);
 
@@ -124,9 +120,9 @@ Message MessageProcessor::processIncomingCoreMessage(bool isAction, QString cons
     ret.timestamp = timestamp;
 
     if (detectingMentions) {
-        auto nameMention = sharedParams.getNameMention();
-        auto sanitizedNameMention = sharedParams.getSanitizedNameMention();
-        auto pubKeyMention = sharedParams.getPublicKeyMention();
+        auto nameMention = sharedParams.GetNameMention();
+        auto sanitizedNameMention = sharedParams.GetSanitizedNameMention();
+        auto pubKeyMention = sharedParams.GetPublicKeyMention();
 
         for (auto const& mention : {nameMention, sanitizedNameMention, pubKeyMention}) {
             auto matchIt = mention.globalMatch(ret.content);

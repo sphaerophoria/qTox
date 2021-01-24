@@ -26,7 +26,7 @@
 #include <QDebug>
 #include <memory>
 
-Friend::Friend(uint32_t friendId, const ToxPk& friendPk, const QString& userAlias, const QString& userName)
+Friend::Friend(uint32_t friendId, const ToxPk& friendPk, uint64_t maxSendingSize, const QString& userAlias, const QString& userName)
     : userName{userName}
     , userAlias{userAlias}
     , friendPk{friendPk}
@@ -34,6 +34,8 @@ Friend::Friend(uint32_t friendId, const ToxPk& friendPk, const QString& userAlia
     , hasNewEvents{false}
     , friendStatus{Status::Status::Offline}
     , isNegotiating{false}
+    , defaultMaxSendingSize{maxSendingSize}
+    , maxSendingSize{maxSendingSize}
 {
     if (userName.isEmpty()) {
         this->userName = friendPk.toString();
@@ -197,8 +199,14 @@ bool Friend::useHistory() const
     return true;
 }
 
-void Friend::setExtendedMessageSupport(bool supported)
+void Friend::setExtendedMessageSupport(bool supported, uint64_t maxSendingSize_)
 {
+    if (!supported) {
+        maxSendingSize = defaultMaxSendingSize;
+    } else {
+        maxSendingSize = maxSendingSize_;
+    }
+
     supportedExtensions[ExtensionType::messages] = supported;
     emit extensionSupportChanged(supportedExtensions);
 
@@ -211,6 +219,11 @@ void Friend::setExtendedMessageSupport(bool supported)
 ExtensionSet Friend::getSupportedExtensions() const
 {
     return supportedExtensions;
+}
+
+uint64_t Friend::getMaxSendingSize() const
+{
+    return maxSendingSize;
 }
 
 void Friend::onNegotiationComplete() {

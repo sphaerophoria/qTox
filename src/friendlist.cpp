@@ -29,7 +29,7 @@
 QHash<ToxPk, Friend*> FriendList::friendList;
 QHash<uint32_t, ToxPk> FriendList::id2key;
 
-Friend* FriendList::addFriend(uint32_t friendId, const ToxPk& friendPk)
+Friend* FriendList::addFriend(uint32_t friendId, const ToxPk& friendPk, uint64_t defaultMaxSendingSize)
 {
     auto friendChecker = friendList.find(friendPk);
     if (friendChecker != friendList.end()) {
@@ -37,7 +37,7 @@ Friend* FriendList::addFriend(uint32_t friendId, const ToxPk& friendPk)
     }
 
     QString alias = Settings::getInstance().getFriendAlias(friendPk);
-    Friend* newfriend = new Friend(friendId, friendPk, alias);
+    Friend* newfriend = new Friend(friendId, friendPk, defaultMaxSendingSize, alias);
     friendList[friendPk] = newfriend;
     id2key[friendId] = friendPk;
 

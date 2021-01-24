@@ -117,12 +117,10 @@ public:
 
     std::unique_ptr<ICoreExtPacket> getPacket(uint32_t friendId) override;
 
-    uint64_t getMaxExtendedMessageSize();
-
 signals:
     void extendedMessageReceived(uint32_t friendId, const QString& message);
     void extendedReceiptReceived(uint32_t friendId, uint64_t receiptId);
-    void extendedMessageSupport(uint32_t friendId, bool supported);
+    void extendedMessageSupport(uint32_t friendId, bool supported, uint64_t maxSendingSize);
 
 public slots:
     void onFriendStatusChanged(uint32_t friendId, Status::Status status);
@@ -131,7 +129,7 @@ private:
 
     static void onExtendedMessageReceived(uint32_t friendId, const uint8_t* data, size_t size, void* userData);
     static void onExtendedMessageReceipt(uint32_t friendId, uint64_t receiptId, void* userData);
-    static void onExtendedMessageNegotiation(uint32_t friendId, bool compatible, uint64_t maxMessageSize, void* userData);
+    static void onExtendedMessageNegotiation(uint32_t friendId, bool compatible, uint64_t negotiatedMaxSendingSize, void* userData);
 
     // A little extra cost to hide the deleters, but this lets us fwd declare
     // and prevent any extension headers from leaking out to the rest of the

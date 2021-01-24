@@ -36,7 +36,8 @@ class Group : public Contact
     Q_OBJECT
 public:
     Group(int groupId, const GroupId persistentGroupId, const QString& name, bool isAvGroupchat,
-          const QString& selfName, ICoreGroupQuery& groupQuery, ICoreIdHandler& idHandler);
+          const QString& selfName, ICoreGroupQuery& groupQuery, ICoreIdHandler& idHandler,
+          uint64_t maxMessageSize);
     bool isAvGroupchat() const;
     uint32_t getId() const override;
     const GroupId& getPersistentId() const override;
@@ -61,6 +62,7 @@ public:
     QString getSelfName() const;
 
     bool useHistory() const final;
+    uint64_t getMaxSendingSize() const override;
 
 signals:
     void titleChangedByUser(const QString& title);
@@ -81,4 +83,5 @@ private:
     int toxGroupNum;
     const GroupId groupId;
     bool avGroupchat;
+    const uint64_t maxMessageSize;
 };

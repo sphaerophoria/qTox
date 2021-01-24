@@ -71,39 +71,22 @@ public:
     {
 
     public:
-        SharedParams(uint64_t maxCoreMessageSize_, uint64_t maxExtendedMessageSize_)
-            : maxCoreMessageSize(maxCoreMessageSize_)
-            , maxExtendedMessageSize(maxExtendedMessageSize_)
-        {}
-
-        QRegularExpression getNameMention() const
+        QRegularExpression GetNameMention() const
         {
             return nameMention;
         }
-        QRegularExpression getSanitizedNameMention() const
+        QRegularExpression GetSanitizedNameMention() const
         {
             return sanitizedNameMention;
         }
-        QRegularExpression getPublicKeyMention() const
+        QRegularExpression GetPublicKeyMention() const
         {
             return pubKeyMention;
         }
         void onUserNameSet(const QString& username);
         void setPublicKey(const QString& pk);
 
-        uint64_t getMaxCoreMessageSize() const
-        {
-            return maxCoreMessageSize;
-        }
-
-        uint64_t getMaxExtendedMessageSize() const
-        {
-            return maxExtendedMessageSize;
-        }
-
     private:
-        uint64_t maxCoreMessageSize;
-        uint64_t maxExtendedMessageSize;
         QRegularExpression nameMention;
         QRegularExpression sanitizedNameMention;
         QRegularExpression pubKeyMention;
@@ -111,7 +94,7 @@ public:
 
     MessageProcessor(const SharedParams& sharedParams);
 
-    std::vector<Message> processOutgoingMessage(bool isAction, const QString& content, ExtensionSet extensions);
+    std::vector<Message> processOutgoingMessage(bool isAction, const QString& content, ExtensionSet extensions, uint64_t maxSendingSize);
     Message processIncomingCoreMessage(bool isAction, const QString& content);
     Message processIncomingExtMessage(const QString& content);
 

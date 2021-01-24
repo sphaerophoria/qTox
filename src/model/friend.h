@@ -32,7 +32,7 @@ class Friend : public Contact
 {
     Q_OBJECT
 public:
-    Friend(uint32_t friendId, const ToxPk& friendPk, const QString& userAlias = {}, const QString &userName = {});
+    Friend(uint32_t friendId, const ToxPk& friendPk, uint64_t defaultMaxSendingSize, const QString& userAlias = {}, const QString &userName = {});
     Friend(const Friend& other) = delete;
     Friend& operator=(const Friend& other) = delete;
 
@@ -56,8 +56,9 @@ public:
     Status::Status getStatus() const;
     bool useHistory() const final;
 
-    void setExtendedMessageSupport(bool supported);
+    void setExtendedMessageSupport(bool supported, uint64_t maxSendingSize);
     ExtensionSet getSupportedExtensions() const;
+    uint64_t getMaxSendingSize() const override;
 
 signals:
     void nameChanged(const ToxPk& friendId, const QString& name);
@@ -80,4 +81,6 @@ private:
     Status::Status friendStatus;
     bool isNegotiating;
     ExtensionSet supportedExtensions;
+    uint64_t defaultMaxSendingSize;
+    uint64_t maxSendingSize;
 };

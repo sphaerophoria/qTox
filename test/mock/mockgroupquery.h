@@ -76,7 +76,6 @@ public:
     {
         emptyGroup = false;
     }
-
 private:
     bool emptyGroup = false;
 };

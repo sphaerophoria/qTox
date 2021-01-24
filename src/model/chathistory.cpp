@@ -431,6 +431,11 @@ void ChatHistory::dispatchUnsentMessages(IMessageDispatcher& messageDispatcher)
         auto messageContent = message.content.asMessage();
         auto isAction = handleActionPrefix(messageContent);
 
+        // FIXME: cached max message size will have to be loaded from history
+        // and propogated to friend if they're offline still. This will prevent
+        // the dispatcher from splitting messages based off the unnegotiated max
+        // message size
+
         // NOTE: timestamp will be generated in messageDispatcher but we haven't
         // hooked up our history callback so it will not be shown in our chatlog
         // with the new timestamp. This is intentional as everywhere else we use

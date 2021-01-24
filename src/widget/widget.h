@@ -173,7 +173,7 @@ public slots:
     void onFriendAliasChanged(const ToxPk& friendId, const QString& alias);
     void onFriendMessageReceived(uint32_t friendnumber, const QString& message, bool isAction);
     void onReceiptReceived(int friendId, ReceiptNum receipt);
-    void onExtendedMessageSupport(uint32_t friendNumber, bool supported);
+    void onExtendedMessageSupport(uint32_t friendNumber, bool supported, uint64_t maxSendingSize);
     void onFriendExtMessageReceived(uint32_t friendNumber, const QString& message);
     void onExtReceiptReceived(uint32_t friendNumber, uint64_t receiptId);
     void onFriendRequestReceived(const ToxPk& friendPk, const QString& message);
@@ -364,7 +364,7 @@ private:
     Core* core = nullptr;
 
 
-    std::unique_ptr<MessageProcessor::SharedParams> sharedMessageProcessorParams;
+    MessageProcessor::SharedParams sharedMessageProcessorParams;
 #if DESKTOP_NOTIFICATIONS
     std::unique_ptr<NotificationGenerator> notificationGenerator;
     DesktopNotify notifier;

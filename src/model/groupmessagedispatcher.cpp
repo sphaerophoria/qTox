@@ -41,7 +41,7 @@ GroupMessageDispatcher::sendMessage(bool isAction, QString const& content)
     const auto firstMessageId = nextMessageId;
     auto lastMessageId = firstMessageId;
 
-    for (auto const& message : processor.processOutgoingMessage(isAction, content, ExtensionSet())) {
+    for (auto const& message : processor.processOutgoingMessage(isAction, content, ExtensionSet(), group.getMaxSendingSize())) {
         auto messageId = nextMessageId++;
         lastMessageId = messageId;
         if (group.getPeersCount() != 1) {
@@ -69,11 +69,18 @@ std::pair<DispatchedMessageId, DispatchedMessageId>
 GroupMessageDispatcher::sendExtendedMessage(const QString& content, ExtensionSet extensions)
 {
     // Stub this api to immediately fail
-    auto messageId = nextMessageId++;
-    auto messages = processor.processOutgoingMessage(false, content, ExtensionSet());
-    emit this->messageSent(messageId, messages[0]);
-    emit this->messageBroken(messageId, BrokenMessageReason::unsupportedExtensions);
-    return {messageId, messageId};
+    const auto firstMessageId = nextMessageId;
+    auto lastMessageId = nextMessageId;
+
+    for (const auto& message : processor.processOutgoingMessage(false, content, ExtensionSet(), group.getMaxSendingSize())) {
+        auto messageId = nextMessageId++;
+        lastMessageId = messageId;
+
+        emit this->messageSent(messageId, message);
+        emit this->messageBroken(messageId, BrokenMessageReason::unsupportedExtensions);
+    }
+    return std::make_pair(firstMessageId, lastMessageId);
+
 }
 
 /**

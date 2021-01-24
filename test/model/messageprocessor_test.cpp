@@ -53,7 +53,7 @@ private slots:
  */
 void TestMessageProcessor::testSelfMention()
 {
-    MessageProcessor::SharedParams sharedParams(tox_max_message_length(), 10 * 1024 * 1024);;
+    MessageProcessor::SharedParams sharedParams;
     const QLatin1String testUserName{"MyUserName"};
     const QLatin1String testToxPk{
         "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF"};
@@ -124,7 +124,7 @@ void TestMessageProcessor::testSelfMention()
  */
 void TestMessageProcessor::testOutgoingMessage()
 {
-    auto sharedParams = MessageProcessor::SharedParams(tox_max_message_length(), 10 * 1024 * 1024);
+    auto sharedParams = MessageProcessor::SharedParams();
     auto messageProcessor = MessageProcessor(sharedParams);
 
     QString testStr;
@@ -133,14 +133,15 @@ void TestMessageProcessor::testOutgoingMessage()
         testStr += "a";
     }
 
-    auto messages = messageProcessor.processOutgoingMessage(false, testStr, ExtensionSet());
+    auto messages = messageProcessor.processOutgoingMessage(false, testStr, ExtensionSet(), tox_max_message_length());
 
     // The message processor should split our messages
     QVERIFY(messages.size() == 2);
 
     auto extensionSet = ExtensionSet();
     extensionSet[ExtensionType::messages] = true;
-    messages = messageProcessor.processOutgoingMessage(false, testStr, extensionSet);
+    constexpr uint64_t negotiatedMaxMessageSize = 10000;
+    messages = messageProcessor.processOutgoingMessage(false, testStr, extensionSet, negotiatedMaxMessageSize);
 
     // If we have multipart messages we shouldn't split our messages
     QVERIFY(messages.size() == 1);
@@ -152,7 +153,7 @@ void TestMessageProcessor::testOutgoingMessage()
 void TestMessageProcessor::testIncomingMessage()
 {
     // Nothing too special happening on the incoming side if we aren't looking for self mentions
-    auto sharedParams = MessageProcessor::SharedParams(tox_max_message_length(), 10 * 1024 * 1024);
+    auto sharedParams = MessageProcessor::SharedParams();
     auto messageProcessor = MessageProcessor(sharedParams);
     auto message = messageProcessor.processIncomingCoreMessage(false, "test");
 

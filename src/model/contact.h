@@ -35,6 +35,7 @@ public:
     virtual const ContactId& getPersistentId() const = 0;
     virtual void setEventFlag(bool flag) = 0;
     virtual bool getEventFlag() const = 0;
+    virtual uint64_t getMaxSendingSize() const = 0;
 
     virtual bool useHistory() const = 0; // TODO: remove after added history in group chat
 

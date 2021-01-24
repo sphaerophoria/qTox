@@ -28,9 +28,9 @@
 #include <set>
 #include <deque>
 
-static constexpr uint64_t testMaxExtendedMessageSize = 10 * 1024 * 1024;
 
-
+static constexpr uint64_t testMaxMessageSize = 1000;
+static constexpr uint64_t testExtendedMaxSize = 10000;
 class MockCoreExtPacket : public ICoreExtPacket
 {
 public:
@@ -161,14 +161,13 @@ TestFriendMessageDispatcher::TestFriendMessageDispatcher() {}
  */
 void TestFriendMessageDispatcher::init()
 {
-    f = std::unique_ptr<Friend>(new Friend(0, ToxPk()));
+    f = std::unique_ptr<Friend>(new Friend(0, ToxPk(), testMaxMessageSize));
     f->setStatus(Status::Status::Online);
     f->onNegotiationComplete();
     messageSender = std::unique_ptr<MockFriendMessageSender>(new MockFriendMessageSender());
     coreExtPacketAllocator = std::unique_ptr<MockCoreExtPacketAllocator>(new MockCoreExtPacketAllocator());
     sharedProcessorParams =
-        std::unique_ptr<MessageProcessor::SharedParams>(new MessageProcessor::SharedParams(tox_max_message_length(), testMaxExtendedMessageSize));
-
+        std::unique_ptr<MessageProcessor::SharedParams>(new MessageProcessor::SharedParams());
     messageProcessor = std::unique_ptr<MessageProcessor>(new MessageProcessor(*sharedProcessorParams));
     friendMessageDispatcher = std::unique_ptr<FriendMessageDispatcher>(
         new FriendMessageDispatcher(*f, *messageProcessor, *messageSender, *coreExtPacketAllocator));
@@ -310,7 +309,7 @@ void TestFriendMessageDispatcher::testNegotiationSuccess()
     f->setStatus(Status::Status::Offline);
     f->setStatus(Status::Status::Online);
 
-    f->setExtendedMessageSupport(true);
+    f->setExtendedMessageSupport(true, testExtendedMaxSize);
     f->onNegotiationComplete();
 
     friendMessageDispatcher->sendMessage(false, "test");
@@ -332,7 +331,7 @@ void TestFriendMessageDispatcher::testOfflineExtensionMessages()
     friendMessageDispatcher->sendExtendedMessage("Test", requiredExtensions);
 
     f->setStatus(Status::Status::Online);
-    f->setExtendedMessageSupport(true);
+    f->setExtendedMessageSupport(true, testExtendedMaxSize);
     f->onNegotiationComplete();
 
     // Ensure that when our friend came online with the desired extensions we
@@ -344,7 +343,7 @@ void TestFriendMessageDispatcher::testOfflineExtensionMessages()
     friendMessageDispatcher->sendExtendedMessage("Test", requiredExtensions);
 
     f->setStatus(Status::Status::Online);
-    f->setExtendedMessageSupport(false);
+    f->setExtendedMessageSupport(false, 0);
     f->onNegotiationComplete();
 
     // Here we want to make sure that when they do _not_ support extensions
@@ -357,14 +356,14 @@ void TestFriendMessageDispatcher::testOfflineExtensionMessages()
 void TestFriendMessageDispatcher::testSentMessageExtensionSetReduced()
 {
     f->setStatus(Status::Status::Online);
-    f->setExtendedMessageSupport(true);
+    f->setExtendedMessageSupport(true, testExtendedMaxSize);
     f->onNegotiationComplete();
 
     friendMessageDispatcher->sendMessage(false, "Test");
 
     f->setStatus(Status::Status::Offline);
     f->setStatus(Status::Status::Online);
-    f->setExtendedMessageSupport(false);
+    f->setExtendedMessageSupport(false, 0);
     f->onNegotiationComplete();
 
     // Ensure that when we reduce our extension set we correctly emit the
@@ -375,12 +374,12 @@ void TestFriendMessageDispatcher::testSentMessageExtensionSetReduced()
 void TestFriendMessageDispatcher::testActionMessagesSplitWithExtensions()
 {
     f->setStatus(Status::Status::Online);
-    f->setExtendedMessageSupport(true);
+    f->setExtendedMessageSupport(true, testExtendedMaxSize);
     f->onNegotiationComplete();
 
     auto reallyLongMessage = QString("a");
 
-    for (uint64_t i = 0; i < testMaxExtendedMessageSize + 50; ++i) {
+    for (int i = 0; i < 9999; ++i) {
         reallyLongMessage += i;
     }
 

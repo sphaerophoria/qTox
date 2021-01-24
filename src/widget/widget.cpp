@@ -248,9 +248,6 @@ void Widget::init()
     ui->searchContactFilterBox->setMenu(filterMenu);
 
     core = &profile.getCore();
-    auto coreExt = core->getExt();
-
-    sharedMessageProcessorParams.reset(new MessageProcessor::SharedParams(core->getMaxMessageSize(), coreExt->getMaxExtendedMessageSize()));
 
     contactListWidget = new FriendListWidget(*core, this, settings.getGroupchatPosition());
     connect(contactListWidget, &FriendListWidget::searchCircle, this, &Widget::searchCircle);
@@ -708,7 +705,7 @@ void Widget::onCoreChanged(Core& core)
     connect(this, &Widget::friendRequestAccepted, &core, &Core::acceptFriendRequest);
     connect(this, &Widget::changeGroupTitle, &core, &Core::changeGroupTitle);
 
-    sharedMessageProcessorParams->setPublicKey(core.getSelfPublicKey().toString());
+    sharedMessageProcessorParams.setPublicKey(core.getSelfPublicKey().toString());
 }
 
 void Widget::onConnected()
@@ -1000,7 +997,7 @@ void Widget::setUsername(const QString& username)
             Qt::convertFromPlainText(username, Qt::WhiteSpaceNormal)); // for overlength names
     }
 
-    sharedMessageProcessorParams->onUserNameSet(username);
+    sharedMessageProcessorParams.onUserNameSet(username);
 }
 
 void Widget::onStatusMessageChanged(const QString& newStatusMessage)
@@ -1143,7 +1140,7 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     assert(core != nullptr);
     settings.updateFriendAddress(friendPk.toString());
 
-    Friend* newfriend = FriendList::addFriend(friendId, friendPk);
+    Friend* newfriend = FriendList::addFriend(friendId, friendPk, core->getMaxMessageSize());
     auto dialogManager = ContentDialogManager::getInstance();
     auto rawChatroom = new FriendChatroom(newfriend, dialogManager, *core);
     std::shared_ptr<FriendChatroom> chatroom(rawChatroom);
@@ -1152,7 +1149,7 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     connectFriendWidget(*widget);
     auto history = profile.getHistory();
 
-    auto messageProcessor = MessageProcessor(*sharedMessageProcessorParams);
+    auto messageProcessor = MessageProcessor(sharedMessageProcessorParams);
     auto friendMessageDispatcher =
         std::make_shared<FriendMessageDispatcher>(*newfriend, std::move(messageProcessor), *core, *core->getExt());
 
@@ -1427,7 +1424,7 @@ void Widget::onReceiptReceived(int friendId, ReceiptNum receipt)
     friendMessageDispatchers[f->getPublicKey()]->onReceiptReceived(receipt);
 }
 
-void Widget::onExtendedMessageSupport(uint32_t friendNumber, bool compatible)
+void Widget::onExtendedMessageSupport(uint32_t friendNumber, bool compatible, uint64_t maxSendingSize)
 {
     const auto& friendKey = FriendList::id2Key(friendNumber);
     Friend* f = FriendList::findFriend(friendKey);
@@ -1435,7 +1432,7 @@ void Widget::onExtendedMessageSupport(uint32_t friendNumber, bool compatible)
         return;
     }
 
-    f->setExtendedMessageSupport(compatible);
+    f->setExtendedMessageSupport(compatible, maxSendingSize);
 }
 
 void Widget::onFriendExtMessageReceived(uint32_t friendNumber, const QString& message)
@@ -2107,7 +2104,7 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
     const auto groupName = tr("Groupchat #%1").arg(groupnumber);
     const bool enabled = core->getGroupAvEnabled(groupnumber);
     Group* newgroup =
-        GroupList::addGroup(*core, groupnumber, groupId, groupName, enabled, core->getUsername());
+        GroupList::addGroup(*core, groupnumber, groupId, groupName, enabled, core->getUsername(), core->getMaxMessageSize());
     assert(newgroup);
 
     if (enabled) {
@@ -2123,7 +2120,7 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
 
     const auto compact = settings.getCompactLayout();
     auto widget = new GroupWidget(chatroom, compact);
-    auto messageProcessor = MessageProcessor(*sharedMessageProcessorParams);
+    auto messageProcessor = MessageProcessor(sharedMessageProcessorParams);
     auto messageDispatcher =
         std::make_shared<GroupMessageDispatcher>(*newgroup, std::move(messageProcessor), *core,
                                                  *core, settings);

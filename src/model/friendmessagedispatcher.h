@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include "src/core/contactid.h"
 #include "src/core/icorefriendmessagesender.h"
 #include "src/model/friend.h"
 #include "src/model/imessagedispatcher.h"

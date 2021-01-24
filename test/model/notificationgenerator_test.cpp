@@ -28,6 +28,7 @@
 
 namespace
 {
+    constexpr uint64_t testMaxMessageSize = 1000;
     class MockNotificationSettings : public INotificationSettings
     {
         virtual bool getNotify() const override { return true; }
@@ -101,7 +102,7 @@ void TestNotificationGenerator::init()
 
 void TestNotificationGenerator::testSingleFriendMessage()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friendName");
     auto notificationData = notificationGenerator->friendMessageNotification(&f, "test");
     QVERIFY(notificationData.title == "friendName");
@@ -110,7 +111,7 @@ void TestNotificationGenerator::testSingleFriendMessage()
 
 void TestNotificationGenerator::testMultipleFriendMessages()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friendName");
     notificationGenerator->friendMessageNotification(&f, "test");
     auto notificationData = notificationGenerator->friendMessageNotification(&f, "test2");
@@ -124,7 +125,7 @@ void TestNotificationGenerator::testMultipleFriendMessages()
 
 void TestNotificationGenerator::testNotificationClear()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friendName");
 
     notificationGenerator->friendMessageNotification(&f, "test");
@@ -139,7 +140,7 @@ void TestNotificationGenerator::testNotificationClear()
 
 void TestNotificationGenerator::testGroupMessage()
 {
-    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler);
+    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
     auto sender = groupQuery->getGroupPeerPk(0, 0);
     g.updateUsername(sender, "sender1");
 
@@ -150,7 +151,7 @@ void TestNotificationGenerator::testGroupMessage()
 
 void TestNotificationGenerator::testMultipleGroupMessages()
 {
-    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler);
+    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
 
     auto sender = groupQuery->getGroupPeerPk(0, 0);
     g.updateUsername(sender, "sender1");
@@ -167,10 +168,10 @@ void TestNotificationGenerator::testMultipleGroupMessages()
 
 void TestNotificationGenerator::testMultipleFriendSourceMessages()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend1");
 
-    Friend f2(1, ToxPk());
+    Friend f2(1, ToxPk(), testMaxMessageSize);
     f2.setName("friend2");
 
     notificationGenerator->friendMessageNotification(&f, "test1");
@@ -182,8 +183,8 @@ void TestNotificationGenerator::testMultipleFriendSourceMessages()
 
 void TestNotificationGenerator::testMultipleGroupSourceMessages()
 {
-    Group g(0, GroupId(QByteArray(32, 0)), "groupName", false, "selfName", *groupQuery, *coreIdHandler);
-    Group g2(1, GroupId(QByteArray(32, 1)), "groupName2", false, "selfName", *groupQuery, *coreIdHandler);
+    Group g(0, GroupId(QByteArray(32, 0)), "groupName", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
+    Group g2(1, GroupId(QByteArray(32, 1)), "groupName2", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
 
     auto sender = groupQuery->getGroupPeerPk(0, 0);
     g.updateUsername(sender, "sender1");
@@ -197,10 +198,10 @@ void TestNotificationGenerator::testMultipleGroupSourceMessages()
 
 void TestNotificationGenerator::testMixedSourceMessages()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
-    Group g(0, GroupId(QByteArray(32, 0)), "group", false, "selfName", *groupQuery, *coreIdHandler);
+    Group g(0, GroupId(QByteArray(32, 0)), "group", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
 
     auto sender = groupQuery->getGroupPeerPk(0, 0);
     g.updateUsername(sender, "sender1");
@@ -218,7 +219,7 @@ void TestNotificationGenerator::testMixedSourceMessages()
 
 void TestNotificationGenerator::testFileTransfer()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     auto notificationData = notificationGenerator->fileTransferNotification(&f, "file", 5 * 1024 * 1024 /* 5MB */);
@@ -229,7 +230,7 @@ void TestNotificationGenerator::testFileTransfer()
 
 void TestNotificationGenerator::testFileTransferAfterMessage()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationGenerator->friendMessageNotification(&f, "test1");
@@ -241,7 +242,7 @@ void TestNotificationGenerator::testFileTransferAfterMessage()
 
 void TestNotificationGenerator::testGroupInvitation()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     auto notificationData = notificationGenerator->groupInvitationNotification(&f);
@@ -252,7 +253,7 @@ void TestNotificationGenerator::testGroupInvitation()
 
 void TestNotificationGenerator::testGroupInviteUncounted()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationGenerator->friendMessageNotification(&f, "test");
@@ -275,7 +276,7 @@ void TestNotificationGenerator::testFriendRequest()
 
 void TestNotificationGenerator::testFriendRequestUncounted()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
     ToxPk sender(QByteArray(32, 0));
 
@@ -289,7 +290,7 @@ void TestNotificationGenerator::testFriendRequestUncounted()
 
 void TestNotificationGenerator::testSimpleFriendMessage()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationSettings->setNotifyHide(true);
@@ -302,7 +303,7 @@ void TestNotificationGenerator::testSimpleFriendMessage()
 
 void TestNotificationGenerator::testSimpleFileTransfer()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationSettings->setNotifyHide(true);
@@ -315,7 +316,7 @@ void TestNotificationGenerator::testSimpleFileTransfer()
 
 void TestNotificationGenerator::testSimpleGroupMessage()
 {
-    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler);
+    Group g(0, GroupId(0), "groupName", false, "selfName", *groupQuery, *coreIdHandler, testMaxMessageSize);
     auto sender = groupQuery->getGroupPeerPk(0, 0);
     g.updateUsername(sender, "sender1");
 
@@ -340,7 +341,7 @@ void TestNotificationGenerator::testSimpleFriendRequest()
 
 void TestNotificationGenerator::testSimpleGroupInvite()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationSettings->setNotifyHide(true);
@@ -352,7 +353,7 @@ void TestNotificationGenerator::testSimpleGroupInvite()
 
 void TestNotificationGenerator::testSimpleMessageToggle()
 {
-    Friend f(0, ToxPk());
+    Friend f(0, ToxPk(), testMaxMessageSize);
     f.setName("friend");
 
     notificationSettings->setNotifyHide(true);

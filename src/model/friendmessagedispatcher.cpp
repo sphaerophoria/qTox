@@ -40,7 +40,7 @@ FriendMessageDispatcher::sendMessage(bool isAction, const QString& content)
 {
     const auto firstId = nextMessageId;
     auto lastId = nextMessageId;
-    for (const auto& message : processor.processOutgoingMessage(isAction, content, f.getSupportedExtensions())) {
+    for (const auto& message : processor.processOutgoingMessage(isAction, content, f.getSupportedExtensions(), f.getMaxSendingSize())) {
         auto messageId = nextMessageId++;
         lastId = messageId;
 
@@ -61,7 +61,7 @@ FriendMessageDispatcher::sendExtendedMessage(const QString& content, ExtensionSe
     const auto firstId = nextMessageId;
     auto lastId = nextMessageId;
 
-    for (const auto& message : processor.processOutgoingMessage(false, content, extensions)) {
+    for (const auto& message : processor.processOutgoingMessage(false, content, extensions, f.getMaxSendingSize())) {
         auto messageId = nextMessageId++;
         lastId = messageId;
 
@@ -195,6 +195,10 @@ OfflineMsgEngine::CompletionFn FriendMessageDispatcher::getCompletionFn(Dispatch
         } else {
             // For now we know the only reason we can fail after giving to the
             // offline message engine is due to a reduced extension set
+
+            // FIXME: with the introduction of max message size there should be
+            // a failure case where the max message size was reduced from the
+            // last time we saw this friend
             emit this->messageBroken(messageId, BrokenMessageReason::unsupportedExtensions);
         }
     };
