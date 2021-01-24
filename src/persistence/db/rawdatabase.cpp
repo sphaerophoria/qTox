@@ -750,6 +750,9 @@ void RawDatabase::process()
             trans = pendingTransactions.dequeue();
         }
 
+        const auto transaction_start = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point transaction_end;
+
         // In case we exit early, prepare to signal errors
         if (trans.success != nullptr)
             trans.success->store(false, std::memory_order_release);
@@ -850,6 +853,10 @@ void RawDatabase::process()
             if (query.insertCallback)
                 query.insertCallback(RowId{sqlite3_last_insert_rowid(sqlite)});
         }
+
+        transaction_end = std::chrono::steady_clock::now();
+
+        qInfo() << "Transaction took " << std::chrono::duration_cast<std::chrono::milliseconds>(transaction_end - transaction_start).count() << " ms";
 
         if (trans.success != nullptr)
             trans.success->store(true, std::memory_order_release);
