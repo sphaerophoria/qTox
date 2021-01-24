@@ -248,6 +248,9 @@ void Widget::init()
     ui->searchContactFilterBox->setMenu(filterMenu);
 
     core = &profile.getCore();
+    auto coreExt = core->getExt();
+
+    sharedMessageProcessorParams.reset(new MessageProcessor::SharedParams(core->getMaxMessageSize(), coreExt->getMaxExtendedMessageSize()));
 
     contactListWidget = new FriendListWidget(*core, this, settings.getGroupchatPosition());
     connect(contactListWidget, &FriendListWidget::searchCircle, this, &Widget::searchCircle);
@@ -705,7 +708,7 @@ void Widget::onCoreChanged(Core& core)
     connect(this, &Widget::friendRequestAccepted, &core, &Core::acceptFriendRequest);
     connect(this, &Widget::changeGroupTitle, &core, &Core::changeGroupTitle);
 
-    sharedMessageProcessorParams.setPublicKey(core.getSelfPublicKey().toString());
+    sharedMessageProcessorParams->setPublicKey(core.getSelfPublicKey().toString());
 }
 
 void Widget::onConnected()
@@ -997,7 +1000,7 @@ void Widget::setUsername(const QString& username)
             Qt::convertFromPlainText(username, Qt::WhiteSpaceNormal)); // for overlength names
     }
 
-    sharedMessageProcessorParams.onUserNameSet(username);
+    sharedMessageProcessorParams->onUserNameSet(username);
 }
 
 void Widget::onStatusMessageChanged(const QString& newStatusMessage)
@@ -1149,7 +1152,7 @@ void Widget::addFriend(uint32_t friendId, const ToxPk& friendPk)
     connectFriendWidget(*widget);
     auto history = profile.getHistory();
 
-    auto messageProcessor = MessageProcessor(sharedMessageProcessorParams);
+    auto messageProcessor = MessageProcessor(*sharedMessageProcessorParams);
     auto friendMessageDispatcher =
         std::make_shared<FriendMessageDispatcher>(*newfriend, std::move(messageProcessor), *core, *core->getExt());
 
@@ -2120,7 +2123,7 @@ Group* Widget::createGroup(uint32_t groupnumber, const GroupId& groupId)
 
     const auto compact = settings.getCompactLayout();
     auto widget = new GroupWidget(chatroom, compact);
-    auto messageProcessor = MessageProcessor(sharedMessageProcessorParams);
+    auto messageProcessor = MessageProcessor(*sharedMessageProcessorParams);
     auto messageDispatcher =
         std::make_shared<GroupMessageDispatcher>(*newgroup, std::move(messageProcessor), *core,
                                                  *core, settings);
