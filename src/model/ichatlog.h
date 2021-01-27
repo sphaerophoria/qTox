@@ -137,6 +137,12 @@ public:
     virtual std::vector<DateChatLogIdxPair> getDateIdxs(const QDate& startDate,
                                                         size_t maxDates) const = 0;
 
+    /**
+     * @brief Inserts a system message at the end of the chat
+     * @param[in] message systemMessage to insert
+     */
+    virtual void addSystemMessage(const SystemMessage& message) = 0;
+
 signals:
     void itemUpdated(ChatLogIdx idx);
 };
