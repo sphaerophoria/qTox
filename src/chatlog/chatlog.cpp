@@ -22,9 +22,11 @@
 #include "chatlinecontentproxy.h"
 #include "chatmessage.h"
 #include "content/filetransferwidget.h"
+#include "content/text.h"
 #include "src/widget/gui.h"
 #include "src/widget/translator.h"
 #include "src/widget/style.h"
+#include "src/persistence/settings.h"
 
 #include <QAction>
 #include <QApplication>
@@ -34,15 +36,18 @@
 #include <QScrollBar>
 #include <QShortcut>
 #include <QTimer>
+#include <QHeaderView>
+#include <QStyledItemDelegate>
+#include <QLineEdit>
+#include <QTextLayout>
+#include <QLabel>
 
 #include <algorithm>
 #include <cassert>
 
-/**
- * @var ChatLog::repNameAfter
- * @brief repetition interval sender name (sec)
- */
 
+namespace
+{
 template <class T>
 T clamp(T x, T min, T max)
 {
@@ -53,8 +58,114 @@ T clamp(T x, T min, T max)
     return x;
 }
 
-ChatLog::ChatLog(QWidget* parent)
+ChatMessage::Ptr getChatMessageForIdx(ChatLogIdx idx,
+                                      const std::map<ChatLogIdx, ChatMessage::Ptr>& messages)
+{
+    auto existingMessageIt = messages.find(idx);
+
+    if (existingMessageIt == messages.end()) {
+        return ChatMessage::Ptr();
+    }
+
+    return existingMessageIt->second;
+}
+
+bool shouldRenderDate(ChatLogIdx idxToRender, const IChatLog& chatLog)
+{
+    if (idxToRender == chatLog.getFirstIdx())
+        return true;
+
+    return chatLog.at(idxToRender - 1).getTimestamp().date()
+           != chatLog.at(idxToRender).getTimestamp().date();
+}
+
+ChatMessage::Ptr dateMessageForItem(const ChatLogItem& item)
+{
+    const auto& s = Settings::getInstance();
+    const auto date = item.getTimestamp().date();
+    auto dateText = date.toString(s.getDateFormat());
+    return ChatMessage::createChatInfoMessage(dateText, ChatMessage::INFO, QDateTime());
+}
+
+ChatMessage::Ptr createMessage(const QString& displayName, bool isSelf, bool colorizeNames,
+                               const ChatLogMessage& chatLogMessage)
+{
+    auto messageType = chatLogMessage.message.isAction ? ChatMessage::MessageType::ACTION
+                                                       : ChatMessage::MessageType::NORMAL;
+
+    const bool bSelfMentioned =
+        std::any_of(chatLogMessage.message.metadata.begin(), chatLogMessage.message.metadata.end(),
+                    [](const MessageMetadata& metadata) {
+                        return metadata.type == MessageMetadataType::selfMention;
+                    });
+
+    if (bSelfMentioned) {
+        messageType = ChatMessage::MessageType::ALERT;
+    }
+
+    const auto timestamp = chatLogMessage.message.timestamp;
+    return ChatMessage::createChatMessage(displayName, chatLogMessage.message.content, messageType,
+                                          isSelf, chatLogMessage.state, timestamp, colorizeNames);
+}
+
+void renderMessageRaw(const QString& displayName, bool isSelf, bool colorizeNames,
+                   const ChatLogMessage& chatLogMessage, ChatMessage::Ptr& chatMessage)
+{
+
+    if (chatMessage) {
+        if (chatLogMessage.state == MessageState::complete) {
+            chatMessage->markAsDelivered(chatLogMessage.message.timestamp);
+        } else if (chatLogMessage.state == MessageState::broken) {
+            chatMessage->markAsBroken();
+        }
+    } else {
+        chatMessage = createMessage(displayName, isSelf, colorizeNames, chatLogMessage);
+    }
+}
+
+/**
+ * @return Chat message message type (info/warning) for the given system message
+ * @param[in] systemMessage
+ */
+ChatMessage::SystemMessageType getChatMessageType(const SystemMessage& systemMessage)
+{
+    switch (systemMessage.messageType)
+    {
+    case SystemMessageType::fileSendFailed:
+    case SystemMessageType::messageSendFailed:
+    case SystemMessageType::unexpectedCallEnd:
+        return ChatMessage::ERROR;
+    case SystemMessageType::userJoinedGroup:
+    case SystemMessageType::userLeftGroup:
+    case SystemMessageType::peerNameChanged:
+    case SystemMessageType::peerStateChange:
+    case SystemMessageType::titleChanged:
+    case SystemMessageType::cleared:
+    case SystemMessageType::outgoingCall:
+    case SystemMessageType::incomingCall:
+    case SystemMessageType::callEnd:
+        return ChatMessage::INFO;
+    }
+
+    return ChatMessage::INFO;
+}
+
+ChatLogIdx firstItemAfterDate(QDate date, const IChatLog& chatLog)
+{
+    auto idxs = chatLog.getDateIdxs(date, 1);
+    if (idxs.size()) {
+        return idxs[0].idx;
+    } else {
+        return chatLog.getNextIdx();
+    }
+}
+} // namespace
+
+
+ChatLog::ChatLog(IChatLog& chatLog, const Core& core, QWidget* parent)
     : QGraphicsView(parent)
+    , chatLog(chatLog)
+    , core(core)
 {
     // Create the scene
     busyScene = new QGraphicsScene(this);
@@ -127,6 +238,11 @@ ChatLog::ChatLog(QWidget* parent)
     reloadTheme();
     retranslateUi();
     Translator::registerHandler(std::bind(&ChatLog::retranslateUi, this), this);
+
+    auto chatLogIdxRange = chatLog.getNextIdx() - chatLog.getFirstIdx();
+    auto firstChatLogIdx = (chatLogIdxRange < 100) ? chatLog.getFirstIdx() : chatLog.getNextIdx() - 100;
+
+    renderMessages(firstChatLogIdx, chatLog.getNextIdx());
 }
 
 ChatLog::~ChatLog()
@@ -175,9 +291,8 @@ void ChatLog::updateSceneRect()
 
 void ChatLog::layout(int start, int end, qreal width)
 {
-    if (lines.empty()) {
+    if (lines.empty())
         return;
-    }
 
     qreal h = 0.0;
 
@@ -320,9 +435,8 @@ void ChatLog::mouseMoveEvent(QMouseEvent* ev)
 // Much faster than QGraphicsScene::itemAt()!
 ChatLineContent* ChatLog::getContentFromPos(QPointF scenePos) const
 {
-    if (lines.empty()) {
+    if (lines.empty())
         return nullptr;
-    }
 
     auto itr =
         std::lower_bound(lines.cbegin(), lines.cend(), scenePos.y(), ChatLine::lessThanBSRectBottom);
@@ -370,7 +484,6 @@ void ChatLog::reposition(int start, int end, qreal deltaY)
 
 void ChatLog::insertChatlineAtBottom(ChatLine::Ptr l)
 {
-    numRemove = 0;
     if (!l.get())
         return;
 
@@ -392,36 +505,8 @@ void ChatLog::insertChatlineAtBottom(ChatLine::Ptr l)
     updateTypingNotification();
 }
 
-void ChatLog::insertChatlineAtBottom(const QList<ChatLine::Ptr>& newLines)
-{
-    numRemove = 0;
-    if (newLines.isEmpty())
-        return;
-
-    if (lines.size() + static_cast<int>(DEF_NUM_MSG_TO_LOAD) >= maxMessages) {
-        removeFirsts(DEF_NUM_MSG_TO_LOAD);
-    }
-
-    for (ChatLine::Ptr l : newLines) {
-        l->setRow(lines.size());
-        l->addToScene(scene);
-        l->visibilityChanged(false);
-        lines.append(l);
-    }
-
-    layout(lines.last()->getRow(), lines.size(), useableWidth());
-
-    // redo layout only when scrolled down
-    if(stickToBottom()) {
-        startResizeWorker(true);
-    } else {
-        updateSceneRect();
-    }
-}
-
 void ChatLog::insertChatlineOnTop(ChatLine::Ptr l)
 {
-    numRemove = 0;
     if (!l.get())
         return;
 
@@ -430,7 +515,6 @@ void ChatLog::insertChatlineOnTop(ChatLine::Ptr l)
 
 void ChatLog::insertChatlinesOnTop(const QList<ChatLine::Ptr>& newLines)
 {
-    numRemove = 0;
     if (newLines.isEmpty())
         return;
 
@@ -450,10 +534,6 @@ void ChatLog::insertChatlinesOnTop(const QList<ChatLine::Ptr>& newLines)
         combLines.push_back(l);
     }
 
-    if (lines.size() + static_cast<int>(DEF_NUM_MSG_TO_LOAD) >= maxMessages) {
-        removeLasts(DEF_NUM_MSG_TO_LOAD);
-    }
-
     // add the old lines
     for (ChatLine::Ptr l : lines) {
         l->setRow(i++);
@@ -467,12 +547,7 @@ void ChatLog::insertChatlinesOnTop(const QList<ChatLine::Ptr>& newLines)
     scene->setItemIndexMethod(oldIndexMeth);
 
     // redo layout
-    if (visibleLines.size() > 1) {
-        startResizeWorker(stickToBottom(), visibleLines[1]);
-    } else {
-        startResizeWorker(stickToBottom());
-    }
-
+    startResizeWorker();
 }
 
 bool ChatLog::stickToBottom() const
@@ -486,22 +561,18 @@ void ChatLog::scrollToBottom()
     verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
-void ChatLog::startResizeWorker(bool stick, ChatLine::Ptr anchorLine)
+void ChatLog::startResizeWorker()
 {
-    if (lines.empty()) {
-        isScroll = true;
+    if (lines.empty())
         return;
-    }
 
     // (re)start the worker
     if (!workerTimer->isActive()) {
         // these values must not be reevaluated while the worker is running
-        workerStb = stick;
-        if (stick) {
-            workerAnchorLine = ChatLine::Ptr();
-        } else {
-            workerAnchorLine = anchorLine;
-        }
+        workerStb = stickToBottom();
+
+        if (!visibleLines.empty())
+            workerAnchorLine = visibleLines.first();
     }
 
     // switch to busy scene displaying the busy notification if there is a lot
@@ -590,11 +661,6 @@ bool ChatLog::hasTextToBeCopied() const
     return selectionMode != SelectionMode::None;
 }
 
-ChatLine::Ptr ChatLog::getTypingNotification() const
-{
-    return typingNotification;
-}
-
 /**
  * @brief Finds the chat line object at a position on screen
  * @param pos Position on screen in global coordinates
@@ -624,6 +690,8 @@ void ChatLog::clear()
         insertChatlineAtBottom(l);
 
     updateSceneRect();
+
+    messages.clear();
 }
 
 void ChatLog::copySelectedText(bool toSelectionBuffer) const
@@ -645,15 +713,6 @@ void ChatLog::setBusyNotification(ChatLine::Ptr notification)
     busyNotification->visibilityChanged(true);
 }
 
-void ChatLog::setTypingNotification(ChatLine::Ptr notification)
-{
-    typingNotification = notification;
-    typingNotification->visibilityChanged(true);
-    typingNotification->setVisible(false);
-    typingNotification->addToScene(scene);
-    updateTypingNotification();
-}
-
 void ChatLog::setTypingNotificationVisible(bool visible)
 {
     if (typingNotification.get()) {
@@ -662,25 +721,32 @@ void ChatLog::setTypingNotificationVisible(bool visible)
     }
 }
 
+void ChatLog::setTypingNotificationName(const QString& displayName)
+{
+    if (!typingNotification.get()) {
+        setTypingNotification();
+    }
+
+    Text* text = static_cast<Text*>(typingNotification->getContent(1));
+    QString typingDiv = "<div class=typing>%1</div>";
+    text->setText(typingDiv.arg(tr("%1 is typing").arg(displayName)));
+
+    updateTypingNotification();
+}
+
 void ChatLog::scrollToLine(ChatLine::Ptr line)
 {
     if (!line.get())
         return;
 
-    if (workerTimer->isActive()) {
-        workerAnchorLine = line;
-        workerStb = false;
-    } else {
-        updateSceneRect();
-        verticalScrollBar()->setValue(line->sceneBoundingRect().top());
-    }
+    updateSceneRect();
+    verticalScrollBar()->setValue(line->sceneBoundingRect().top());
 }
 
 void ChatLog::selectAll()
 {
-    if (lines.empty()) {
+    if (lines.empty())
         return;
-    }
 
     clearSelection();
 
@@ -706,58 +772,96 @@ void ChatLog::reloadTheme()
     selectionRectColor = Style::getColor(Style::SelectText);
     selGraphItem->setBrush(QBrush(selectionRectColor));
     selGraphItem->setPen(QPen(selectionRectColor.darker(120)));
+    setTypingNotification();
 
     for (ChatLine::Ptr l : lines) {
         l->reloadTheme();
     }
 }
 
-void ChatLog::removeFirsts(const int num)
+void ChatLog::startSearch(const QString& phrase, const ParameterSearch& parameter)
 {
-    if (lines.size() > num) {
-        lines.erase(lines.begin(), lines.begin()+num);
-        numRemove = num;
+    disableSearchText();
+
+    bool bForwardSearch = false;
+    switch (parameter.period) {
+    case PeriodSearch::WithTheFirst: {
+        bForwardSearch = true;
+        searchPos.logIdx = chatLog.getFirstIdx();
+        searchPos.numMatches = 0;
+        break;
+    }
+    case PeriodSearch::WithTheEnd:
+    case PeriodSearch::None: {
+        bForwardSearch = false;
+        searchPos.logIdx = chatLog.getNextIdx();
+        searchPos.numMatches = 0;
+        break;
+    }
+    case PeriodSearch::AfterDate: {
+        bForwardSearch = true;
+        searchPos.logIdx = firstItemAfterDate(parameter.date, chatLog);
+        searchPos.numMatches = 0;
+        break;
+    }
+    case PeriodSearch::BeforeDate: {
+        bForwardSearch = false;
+        searchPos.logIdx = firstItemAfterDate(parameter.date, chatLog);
+        searchPos.numMatches = 0;
+        break;
+    }
+    }
+
+    if (bForwardSearch) {
+        onSearchDown(phrase, parameter);
     } else {
-        lines.clear();
-    }
-
-    for (int i = 0; i < lines.size(); ++i) {
-        lines[i]->setRow(i);
-    }
-
-    moveSelectionRectUpIfSelected(num);
-}
-
-void ChatLog::removeLasts(const int num)
-{
-    if (lines.size() > num) {
-        lines.erase(lines.end()-num, lines.end());
-        numRemove = num;
-    } else {
-        lines.clear();
+        onSearchUp(phrase, parameter);
     }
 }
 
-void ChatLog::setScroll(const bool scroll)
+void ChatLog::onSearchUp(const QString& phrase, const ParameterSearch& parameter)
 {
-    isScroll = scroll;
+    auto result = chatLog.searchBackward(searchPos, phrase, parameter);
+    handleSearchResult(result, SearchDirection::Up);
 }
 
-int ChatLog::getNumRemove() const
+void ChatLog::onSearchDown(const QString& phrase, const ParameterSearch& parameter)
 {
-    return numRemove;
+    auto result = chatLog.searchForward(searchPos, phrase, parameter);
+    handleSearchResult(result, SearchDirection::Down);
+}
+
+void ChatLog::handleSearchResult(SearchResult result, SearchDirection direction)
+{
+    if (!result.found) {
+        emit messageNotFoundShow(direction);
+        return;
+    }
+
+    disableSearchText();
+
+    searchPos = result.pos;
+
+    auto const firstRenderedIdx = (messages.empty()) ? chatLog.getNextIdx() : messages.begin()->first;
+
+    renderMessages(searchPos.logIdx, firstRenderedIdx, [this, result] {
+        auto msg = messages.at(searchPos.logIdx);
+        scrollToLine(msg);
+
+        auto text = qobject_cast<Text*>(msg->getContent(1));
+        text->selectText(result.exp, std::make_pair(result.start, result.len));
+    });
 }
 
 void ChatLog::forceRelayout()
 {
-    startResizeWorker(stickToBottom());
+    startResizeWorker();
 }
 
-void ChatLog::checkVisibility(bool causedWheelEvent)
+void ChatLog::checkVisibility()
 {
-    if (lines.empty()) {
+    if (lines.empty())
         return;
-    }
 
     // find first visible line
     auto lowerBound = std::lower_bound(lines.cbegin(), lines.cend(), getVisibleRect().top(),
@@ -798,14 +902,6 @@ void ChatLog::checkVisibility(bool causedWheelEvent)
     if (!visibleLines.isEmpty()) {
         emit firstVisibleLineChanged(lastLineBeforeVisible, visibleLines.at(0));
     }
-
-    if (causedWheelEvent) {
-        if (lowerBound != lines.cend() && lowerBound->get()->row == 0) {
-            emit loadHistoryLower();
-        } else if (upperBound == lines.cend()) {
-            emit loadHistoryUpper();
-        }
-    }
 }
 
 void ChatLog::scrollContentsBy(int dx, int dy)
@@ -819,7 +915,7 @@ void ChatLog::resizeEvent(QResizeEvent* ev)
     bool stb = stickToBottom();
 
     if (ev->size().width() != ev->oldSize().width()) {
-        startResizeWorker(stb);
+        startResizeWorker();
         stb = false; // let the resize worker handle it
     }
 
@@ -856,9 +952,8 @@ void ChatLog::updateTypingNotification()
 
     qreal posY = 0.0;
 
-    if (!lines.empty()) {
+    if (!lines.empty())
         posY = lines.last()->sceneBoundingRect().bottom() + lineSpacing;
-    }
 
     notification->layout(useableWidth(), QPointF(0.0, posY));
 }
@@ -886,9 +981,8 @@ QRectF ChatLog::calculateSceneRect() const
 {
     qreal bottom = (lines.empty() ? 0.0 : lines.last()->sceneBoundingRect().bottom());
 
-    if (typingNotification.get() != nullptr) {
+    if (typingNotification.get() != nullptr)
         bottom += typingNotification->sceneBoundingRect().height() + lineSpacing;
-    }
 
     return QRectF(-margins.left(), -margins.top(), useableWidth(),
                   bottom + margins.bottom() + margins.top());
@@ -933,12 +1027,10 @@ void ChatLog::onWorkerTimeout()
         updateMultiSelectionRect();
 
         // scroll
-        if (workerStb) {
+        if (workerStb)
             scrollToBottom();
-            workerStb = false;
-        } else {
+        else
             scrollToLine(workerAnchorLine);
-        }
 
         // don't keep a Ptr to the anchor line
         workerAnchorLine = ChatLine::Ptr();
@@ -946,7 +1038,6 @@ void ChatLog::onWorkerTimeout()
         // hidden during busy screen
         verticalScrollBar()->show();
 
-        isScroll = true;
         emit workerTimeoutFinished();
     }
 }
@@ -955,6 +1046,58 @@ void ChatLog::onMultiClickTimeout()
 {
     clickCount = 0;
 }
+
+void ChatLog::renderMessage(ChatLogIdx idx)
+{
+    renderMessages(idx, idx + 1);
+}
+
+void ChatLog::renderMessages(ChatLogIdx begin, ChatLogIdx end,
+                                     std::function<void(void)> onCompletion)
+{
+    QList<ChatLine::Ptr> beforeLines;
+    QList<ChatLine::Ptr> afterLines;
+
+    for (auto i = begin; i < end; ++i) {
+        auto chatMessage = getChatMessageForIdx(i, messages);
+        renderItem(chatLog.at(i), needsToHideName(i), colorizeNames, chatMessage);
+
+        if (messages.find(i) == messages.end()) {
+            QList<ChatLine::Ptr>* lines =
+                (messages.empty() || i > messages.rbegin()->first) ? &afterLines : &beforeLines;
+
+            messages.insert({i, chatMessage});
+
+            if (shouldRenderDate(i, chatLog)) {
+                lines->push_back(dateMessageForItem(chatLog.at(i)));
+            }
+            lines->push_back(chatMessage);
+        }
+    }
+
+    for (auto const& line : afterLines) {
+        insertChatlineAtBottom(line);
+    }
+
+    if (!beforeLines.empty()) {
+        // Rendering upwards is expensive and has async behavior for chatWidget.
+        // Once rendering completes we call our completion callback once and
+        // then disconnect the signal
+        if (onCompletion) {
+            auto connection = std::make_shared<QMetaObject::Connection>();
+            *connection = connect(this, &ChatLog::workerTimeoutFinished,
+                                  [this, onCompletion, connection] {
+                                      onCompletion();
+                                      this->disconnect(*connection);
+                                  });
+        }
+
+        insertChatlinesOnTop(beforeLines);
+    } else if (onCompletion) {
+        onCompletion();
+    }
+}
+
 
 void ChatLog::handleMultiClickEvent()
 {
@@ -1014,12 +1157,8 @@ void ChatLog::focusOutEvent(QFocusEvent* ev)
 
 void ChatLog::wheelEvent(QWheelEvent *event)
 {
-    if (!isScroll) {
-        return;
-    }
-
     QGraphicsView::wheelEvent(event);
-    checkVisibility(true);
+    checkVisibility();
 }
 
 void ChatLog::retranslateUi()
@@ -1141,3 +1280,348 @@ void ChatLog::moveMultiSelectionDown(int offset)
         emit selectionChanged();
     }
 }
+
+void ChatLog::setTypingNotification()
+{
+    typingNotification = ChatMessage::createTypingNotification();
+    typingNotification->visibilityChanged(true);
+    typingNotification->setVisible(false);
+    typingNotification->addToScene(scene);
+    updateTypingNotification();
+}
+
+void ChatLog::renderItem(const ChatLogItem& item, bool hideName, bool colorizeNames, ChatMessage::Ptr& chatMessage)
+{
+    const auto& sender = item.getSender();
+
+    bool isSelf = sender == core.getSelfId().getPublicKey();
+
+    switch (item.getContentType()) {
+    case ChatLogItem::ContentType::message: {
+        const auto& chatLogMessage = item.getContentAsMessage();
+
+        renderMessageRaw(item.getDisplayName(), isSelf, colorizeNames, chatLogMessage, chatMessage);
+
+        break;
+    }
+    case ChatLogItem::ContentType::fileTransfer: {
+        const auto& file = item.getContentAsFile();
+        renderFile(item.getDisplayName(), file.file, isSelf, item.getTimestamp(), chatMessage);
+        break;
+    }
+    case ChatLogItem::ContentType::systemMessage: {
+        const auto& systemMessage = item.getContentAsSystemMessage();
+
+        auto chatMessageType = getChatMessageType(systemMessage);
+        chatMessage = ChatMessage::createChatInfoMessage(systemMessage.toString(), chatMessageType, QDateTime::currentDateTime());
+        // Ignore caller's decision to hide the name. We show the icon in the
+        // slot of the sender's name so we always want it visible
+        hideName = false;
+        break;
+    }
+    }
+
+    if (hideName) {
+        chatMessage->hideSender();
+    }
+}
+
+void ChatLog::renderFile(QString displayName, ToxFile file, bool isSelf, QDateTime timestamp,
+                ChatMessage::Ptr& chatMessage)
+{
+    if (!chatMessage) {
+        CoreFile* coreFile = core.getCoreFile();
+        assert(coreFile);
+        chatMessage = ChatMessage::createFileTransferMessage(displayName, *coreFile, file, isSelf, timestamp);
+    } else {
+        auto proxy = static_cast<ChatLineContentProxy*>(chatMessage->getContent(1));
+        assert(proxy->getWidgetType() == ChatLineContentProxy::FileTransferWidgetType);
+        auto ftWidget = static_cast<FileTransferWidget*>(proxy->getWidget());
+        ftWidget->onFileTransferUpdate(file);
+    }
+}
+
+/**
+ * @brief Show, is it needed to hide message author name or not
+ * @param idx ChatLogIdx of the message
+ * @return True if the name should be hidden, false otherwise
+ */
+bool ChatLog::needsToHideName(ChatLogIdx idx) const
+{
+    // If the previous message is not rendered we should show the name
+    // regardless of other constraints
+    auto itemBefore = messages.find(idx - 1);
+    if (itemBefore == messages.end()) {
+        return false;
+    }
+
+    const auto& prevItem = chatLog.at(idx - 1);
+    const auto& currentItem = chatLog.at(idx);
+
+    // Always show the * in the name field for action messages
+    if (currentItem.getContentType() == ChatLogItem::ContentType::message
+        && currentItem.getContentAsMessage().message.isAction) {
+        return false;
+    }
+
+    qint64 messagesTimeDiff = prevItem.getTimestamp().secsTo(currentItem.getTimestamp());
+    return currentItem.getSender() == prevItem.getSender()
+           && messagesTimeDiff < repNameAfter;
+}
+
+void ChatLog::disableSearchText()
+{
+    auto msgIt = messages.find(searchPos.logIdx);
+    if (msgIt != messages.end()) {
+        auto text = qobject_cast<Text*>(msgIt->second->getContent(1));
+        text->deselectText();
+    }
+}
+
+void ChatLog::removeSearchPhrase()
+{
+    disableSearchText();
+}
+
+void ChatLog::jumpToDate(QDate date) {
+    auto idx = firstItemAfterDate(date, chatLog);
+    jumpToIdx(idx);
+}
+
+void ChatLog::jumpToIdx(ChatLogIdx idx) {
+    if (messages.find(idx) == messages.end()) {
+        renderMessages(idx, chatLog.getNextIdx());
+    }
+
+    scrollToLine(messages[idx]);
+}
+
+class Selection
+{
+public:
+    struct Position
+    {
+        int row = 0;
+        int column = 0;
+        int charIdx = 0;
+    };
+
+    struct SelectionRange
+    {
+        Position start;
+        Position end;
+    };
+
+    void startSelection(Position start);
+    // FIXME: need better name
+    void endSelection(Position end);
+
+
+    bool isSelectionActive();
+    SelectionRange range();
+
+
+private:
+    bool selectionActive = false;
+    SelectionRange selectionRange;
+};
+
+enum class ChatModelRoles
+{
+    selection = Qt::UserRole,
+};
+
+/**
+ * Provides a model for a QTableView
+ */
+class ChatModel : public QAbstractItemModel
+{
+    Q_OBJECT
+public:
+    ChatModel(IChatLog& chatLog)
+        : chatLog(chatLog)
+    {}
+
+    QModelIndex parent(const QModelIndex& index) const override;
+    QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+
+    Qt::ItemFlags flags(const QModelIndex& index) const override
+    {
+        return Qt::ItemIsEnabled | Qt::ItemIsEditable;
+    }
+
+
+private:
+
+    IChatLog& chatLog;
+    Selection selection;
+
+};
+
+
+
+QModelIndex ChatModel::parent(const QModelIndex& index) const
+{
+    // There is no tree-like view for our model, so there is never a parent
+    return QModelIndex();
+}
+
+QModelIndex ChatModel::index(int row, int column, const QModelIndex& /*parent*/) const
+{
+    // Thereis no tree-like view for our model, so there is no special handling to be done with the parent.
+    return createIndex(row, column);
+}
+
+int ChatModel::rowCount(const QModelIndex& /*parent*/) const
+{
+    return chatLog.getNextIdx() - chatLog.getFirstIdx();
+}
+
+int ChatModel::columnCount(const QModelIndex& /*parent*/) const
+{
+    return 3;
+}
+
+ChatLogIdx rowToChatLogIdx(int row, IChatLog& chatLog)
+{
+    return chatLog.getFirstIdx() + row;
+}
+
+QVariant ChatModel::data(const QModelIndex& index, int role) const
+{
+    if (role != Qt::DisplayRole)
+        return QVariant();
+
+    auto idx = rowToChatLogIdx(index.row(), chatLog);
+
+    if (idx >= chatLog.getNextIdx()) {
+        return QVariant();
+    }
+
+    const auto& chatItem = chatLog.at(idx);
+
+    if (index.column() == 1) {
+        switch (chatItem.getContentType())
+        {
+            case ChatLogItem::ContentType::message:
+            {
+                const auto& message = chatItem.getContentAsMessage();
+                return message.message.content;
+            }
+            default:
+                return QVariant();
+        }
+    }
+
+    return QVariant();
+}
+
+class ChatWidgetDelegate : public QStyledItemDelegate
+{
+
+
+    // Current idea for text highlighting
+    // * Don't do anything special in the paint function, just drop the text onto the painter
+    // * On mouse move, render a text document for the chat and try to retrieve the cursor position of the mouse relative to the doc
+    // * Update the currently selected text
+    // * Re-render
+    // * For multi-item selection we might be able to fall back on the default selection model
+    //
+    // Lets try something else and come back to this.
+    // On mouse click open the editor
+    // Editor returns a qlabel
+    //bool editorEvent(QEvent* event, QAbstractItemModel* model, const QStyleOptionViewItem& option, const QModelIndex& index) override
+    //{
+    //   // qWarning() << event->type();
+
+    //    return false;
+    //}
+
+    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        qWarning() << "editor created";
+        auto label = new QLabel(parent);
+        label->setText(index.data().toString());
+        label->setWordWrap(true);
+        Qt::Alignment alignment;
+        label->setAlignment(Qt::Alignment(Qt::AlignVCenter | Qt::AlignLeft));
+        label->setTextInteractionFlags(Qt::TextSelectableByMouse);
+        label->setFixedSize(option.rect.width(), option.rect.height());
+        return label;
+    }
+
+    QSize sizeHint(const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        return option.fontMetrics.boundingRect(option.rect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextWordWrap,  index.data().toString()).size();
+    }
+
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        painter->save();
+
+        QTextOption textOption;
+        textOption.setWrapMode(QTextOption::WordWrap);
+        textOption.setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        painter->drawText(option.rect, index.data().toString(), textOption);
+
+        painter->restore();
+    }
+
+private:
+
+};
+
+
+struct ChatWidget::Impl
+{
+    IChatLog& chatLog;
+    const Core& core;
+
+    Impl(IChatLog& chatlog, const Core& core)
+        : chatLog(chatLog)
+        , core(core)
+    {}
+};
+
+
+ChatWidget::ChatWidget(IChatLog& chatLog, const Core& core, QWidget* parent)
+    : QTableView(parent)
+    , impl(new ChatWidget::Impl(chatLog, core))
+{
+    setModel(new ChatModel(chatLog));
+    setItemDelegate(new ChatWidgetDelegate());
+
+    setShowGrid(false);
+    horizontalHeader()->hide();
+    verticalHeader()->hide();
+
+    setColumnWidth(1, 500);
+
+    verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+}
+
+ChatWidget::~ChatWidget() = default;
+
+void ChatWidget::mouseMoveEvent(QMouseEvent* event)
+{
+
+}
+
+void ChatWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton) {
+        QModelIndex index = indexAt(event->pos());
+        edit(index);
+    }
+}
+
+void ChatWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+
+}
+
+#include "chatlog.moc"

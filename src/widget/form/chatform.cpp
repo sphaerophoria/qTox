@@ -126,7 +126,6 @@ ChatForm::ChatForm(Profile& profile, Friend* chatFriend, IChatLog& chatLog, IMes
 
     callDurationTimer = nullptr;
 
-    chatWidget->setTypingNotification(ChatMessage::createTypingNotification());
     chatWidget->setMinimumHeight(CHAT_WIDGET_MIN_HEIGHT);
 
     callDuration = new QLabel();
@@ -672,11 +671,9 @@ void ChatForm::onUpdateTime()
 
 void ChatForm::setFriendTyping(bool isTyping)
 {
-    chatWidget->setTypingNotificationVisible(isTyping);
-    Text* text = static_cast<Text*>(chatWidget->getTypingNotification()->getContent(1));
-    QString typingDiv = "<div class=typing>%1</div>";
-    QString name = f->getDisplayedName();
-    text->setText(typingDiv.arg(tr("%1 is typing").arg(name)));
+    //chatWidget->setTypingNotificationVisible(isTyping);
+    //QString name = f->getDisplayedName();
+    //chatWidget->setTypingNotificationName(name);
 }
 
 void ChatForm::show(ContentLayout* contentLayout)
@@ -686,7 +683,6 @@ void ChatForm::show(ContentLayout* contentLayout)
 
 void ChatForm::reloadTheme()
 {
-    chatWidget->setTypingNotification(ChatMessage::createTypingNotification());
     GenericChatForm::reloadTheme();
 }
 

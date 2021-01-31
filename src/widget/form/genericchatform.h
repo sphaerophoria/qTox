@@ -22,7 +22,6 @@
 #include "src/chatlog/chatmessage.h"
 #include "src/core/toxpk.h"
 #include "src/model/ichatlog.h"
-#include "src/widget/form/loadhistorydialog.h"
 #include "src/widget/searchtypes.h"
 
 #include <QMenu>
@@ -36,6 +35,7 @@
 
 class ChatFormHeader;
 class ChatLog;
+class ChatWidget;
 class ChatTextEdit;
 class Contact;
 class ContentLayout;
@@ -84,7 +84,6 @@ public:
 
 signals:
     void messageInserted();
-    void messageNotFoundShow(SearchDirection direction);
 
 public slots:
     void focusInput();
@@ -110,37 +109,16 @@ protected slots:
     void onLoadHistory();
     void onExportChat();
     void searchFormShow();
-    void onSearchTriggered();
     void updateShowDateInfo(const ChatLine::Ptr& prevLine, const ChatLine::Ptr& topLine);
-
-    void searchInBegin(const QString& phrase, const ParameterSearch& parameter);
-    void onSearchUp(const QString& phrase, const ParameterSearch& parameter);
-    void onSearchDown(const QString& phrase, const ParameterSearch& parameter);
-    void handleSearchResult(SearchResult result, SearchDirection direction);
-    void renderMessage(ChatLogIdx idx);
-    void renderMessages(ChatLogIdx begin, ChatLogIdx end,
-                        std::function<void(void)> onCompletion = std::function<void(void)>());
-    void goToCurrentDate();
-
-    void loadHistoryLower();
-    void loadHistoryUpper();
 
 private:
     void retranslateUi();
     void addSystemDateMessage(const QDate& date);
     QDateTime getTime(const ChatLine::Ptr& chatLine) const;
-    void loadHistory(const QDateTime& time, const LoadHistoryDialog::LoadType type);
-    void loadHistoryTo(const QDateTime& time);
-    bool loadHistoryFrom(const QDateTime& time);
-    void removeFirstsMessages(const int num);
-    void removeLastsMessages(const int num);
 
-    void renderItem(const ChatLogItem &item, bool hideName, bool colorizeNames, ChatMessage::Ptr &chatMessage);
-    void renderFile(QString displayName, ToxFile file, bool isSelf, QDateTime timestamp, ChatMessage::Ptr &chatMessage);
 protected:
     ChatMessage::Ptr createMessage(const ToxPk& author, const QString& message,
                                    const QDateTime& datetime, bool isAction, bool isSent, bool colorizeName = false);
-    bool needsToHideName(ChatLogIdx idx) const;
     virtual void insertChatMessage(ChatMessage::Ptr msg);
     void adjustFileMenuPosition();
     void hideEvent(QHideEvent* event) override;
@@ -148,8 +126,6 @@ protected:
     bool event(QEvent*) final;
     void resizeEvent(QResizeEvent* event) final;
     bool eventFilter(QObject* object, QEvent* event) final;
-    void disableSearchText();
-    void enableSearchText();
     bool searchInText(const QString& phrase, const ParameterSearch& parameter, SearchDirection direction);
     std::pair<int, int> indexForSearchInLine(const QString& txt, const QString& phrase, const ParameterSearch& parameter, SearchDirection direction);
 
@@ -165,7 +141,6 @@ protected:
     QAction* searchAction;
     QAction* loadHistoryAction;
     QAction* exportChatAction;
-    QAction* goCurrentDateAction;
 
     QMenu menu;
 
@@ -180,7 +155,7 @@ protected:
 
     SearchForm *searchForm;
     QLabel *dateInfo;
-    ChatLog* chatWidget;
+    ChatWidget* chatWidget;
     ChatTextEdit* msgEdit;
 #ifdef SPELL_CHECKING
     Sonnet::SpellCheckDecorator* decorator{nullptr};
@@ -190,7 +165,6 @@ protected:
 
     IChatLog& chatLog;
     IMessageDispatcher& messageDispatcher;
-    SearchResult searchResult;
-    std::map<ChatLogIdx, ChatMessage::Ptr> messages;
+    // fIXME: remove colorizenames
     bool colorizeNames = false;
 };
