@@ -209,7 +209,7 @@ private:
     SearchPos searchPos;
     const Core& core;
 
-    std::unique_ptr<ChatLineStorage> renderedLineStorage;
+    std::unique_ptr<ChatLineStorage> chatLineStorage;
 
     std::vector<std::function<void(void)>> renderCompletionFns;
 };

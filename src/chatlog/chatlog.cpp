@@ -191,7 +191,7 @@ ChatLog::ChatLog(IChatLog& chatLog, const Core& core, QWidget* parent)
     : QGraphicsView(parent)
     , chatLog(chatLog)
     , core(core)
-    , renderedLineStorage(new ChatLineStorage())
+    , chatLineStorage(new ChatLineStorage())
 {
     // Create the scene
     busyScene = new QGraphicsScene(this);
@@ -282,7 +282,7 @@ ChatLog::~ChatLog()
     Translator::unregister(this);
 
     // Remove chatlines from scene
-    for (ChatLine::Ptr l : *renderedLineStorage)
+    for (ChatLine::Ptr l : *chatLineStorage)
         l->removeFromScene();
 
     if (busyNotification)
@@ -297,7 +297,7 @@ void ChatLog::clearSelection()
     if (selectionMode == SelectionMode::None)
         return;
 
-    forEachLineIn(selFirstRow, selLastRow, *renderedLineStorage, [&] (ChatLine::Ptr& line) {
+    forEachLineIn(selFirstRow, selLastRow, *chatLineStorage, [&] (ChatLine::Ptr& line) {
         line->selectionCleared();
     });
 
@@ -324,7 +324,7 @@ void ChatLog::updateSceneRect()
 
 void ChatLog::layout(int start, int end, qreal width)
 {
-    if (renderedLineStorage->empty())
+    if (chatLineStorage->empty())
         return;
 
     qreal h = 0.0;
@@ -332,13 +332,13 @@ void ChatLog::layout(int start, int end, qreal width)
     // Line at start-1 is considered to have the correct position. All following lines are
     // positioned in respect to this line.
     if (start - 1 >= 0)
-        h = (*renderedLineStorage)[start - 1]->sceneBoundingRect().bottom() + lineSpacing;
+        h = (*chatLineStorage)[start - 1]->sceneBoundingRect().bottom() + lineSpacing;
 
-    start = clamp<int>(start, 0, renderedLineStorage->size());
-    end = clamp<int>(end + 1, 0, renderedLineStorage->size());
+    start = clamp<int>(start, 0, chatLineStorage->size());
+    end = clamp<int>(end + 1, 0, chatLineStorage->size());
 
     for (int i = start; i < end; ++i) {
-        ChatLine* l = (*renderedLineStorage)[i].get();
+        ChatLine* l = (*chatLineStorage)[i].get();
 
         l->layout(width, QPointF(0.0, h));
         h += l->sceneBoundingRect().height() + lineSpacing;
@@ -447,8 +447,8 @@ void ChatLog::mouseMoveEvent(QMouseEvent* ev)
                 return;
             }
 
-            auto selClickedIt = renderedLineStorage->find(selClickedRow);
-            auto lineIt = renderedLineStorage->find(line);
+            auto selClickedIt = chatLineStorage->find(selClickedRow);
+            auto lineIt = chatLineStorage->find(line);
             if (lineIt > selClickedIt)
                 selLastRow = line;
 
@@ -465,14 +465,14 @@ void ChatLog::mouseMoveEvent(QMouseEvent* ev)
 // Much faster than QGraphicsScene::itemAt()!
 ChatLineContent* ChatLog::getContentFromPos(QPointF scenePos) const
 {
-    if (renderedLineStorage->empty())
+    if (chatLineStorage->empty())
         return nullptr;
 
     auto itr =
-        std::lower_bound(renderedLineStorage->begin(), renderedLineStorage->end(), scenePos.y(), ChatLine::lessThanBSRectBottom);
+        std::lower_bound(chatLineStorage->begin(), chatLineStorage->end(), scenePos.y(), ChatLine::lessThanBSRectBottom);
 
     // find content
-    if (itr != renderedLineStorage->end() && (*itr)->sceneBoundingRect().contains(scenePos))
+    if (itr != chatLineStorage->end() && (*itr)->sceneBoundingRect().contains(scenePos))
         return (*itr)->getContent(scenePos);
 
     return nullptr;
@@ -503,8 +503,8 @@ void ChatLog::insertChatlines(std::map<ChatLogIdx, ChatLine::Ptr> chatLines)
     if (chatLines.empty())
         return;
 
-    bool allLinesAtEnd = !renderedLineStorage->hasIndexedMessage() || chatLines.begin()->first > renderedLineStorage->lastIdx();
-    auto startLineSize = renderedLineStorage->size();
+    bool allLinesAtEnd = !chatLineStorage->hasIndexedMessage() || chatLines.begin()->first > chatLineStorage->lastIdx();
+    auto startLineSize = chatLineStorage->size();
 
     QGraphicsScene::ItemIndexMethod oldIndexMeth = scene->itemIndexMethod();
     scene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -513,17 +513,17 @@ void ChatLog::insertChatlines(std::map<ChatLogIdx, ChatLine::Ptr> chatLines)
         auto idx = chatLine.first;
         auto const& l = chatLine.second;
 
-        auto insertedMessageIt = renderedLineStorage->insertChatMessage(idx, chatLog.at(idx).getTimestamp(), l);
+        auto insertedMessageIt = chatLineStorage->insertChatMessage(idx, chatLog.at(idx).getTimestamp(), l);
 
         auto date = chatLog.at(idx).getTimestamp().date().startOfDay();
 
-        auto insertionIdx = std::distance(renderedLineStorage->begin(), insertedMessageIt);
+        auto insertionIdx = std::distance(chatLineStorage->begin(), insertedMessageIt);
 
-        if (!renderedLineStorage->contains(date)) {
+        if (!chatLineStorage->contains(date)) {
             // If there is no dateline for the given date we need to insert it
             // above the line we'd like to insert.
             auto dateLine = createDateMessage(date);
-            renderedLineStorage->insertDateLine(date, dateLine);
+            chatLineStorage->insertDateLine(date, dateLine);
             dateLine->addToScene(scene);
             dateLine->visibilityChanged(false);
         }
@@ -549,7 +549,7 @@ void ChatLog::insertChatlines(std::map<ChatLogIdx, ChatLine::Ptr> chatLines)
         bool stickToBtm = stickToBottom();
 
         // partial refresh
-        layout(startLineSize, renderedLineStorage->size(), useableWidth());
+        layout(startLineSize, chatLineStorage->size(), useableWidth());
         updateSceneRect();
 
         if (stickToBtm)
@@ -578,7 +578,7 @@ void ChatLog::scrollToBottom()
 
 void ChatLog::startResizeWorker()
 {
-    if (renderedLineStorage->empty())
+    if (chatLineStorage->empty())
         return;
 
     // (re)start the worker
@@ -593,7 +593,7 @@ void ChatLog::startResizeWorker()
     // switch to busy scene displaying the busy notification if there is a lot
     // of text to be resized
     int txt = 0;
-    for (ChatLine::Ptr line : *renderedLineStorage) {
+    for (ChatLine::Ptr line : *chatLineStorage) {
         if (txt > 500000)
             break;
         for (ChatLineContent* content : line->content)
@@ -647,7 +647,7 @@ QString ChatLog::getSelectedText() const
         // build a nicely formatted message
         QString out;
 
-        forEachLineIn(selFirstRow, selLastRow, *renderedLineStorage, [&] (ChatLine::Ptr& line) {
+        forEachLineIn(selFirstRow, selLastRow, *chatLineStorage, [&] (ChatLine::Ptr& line) {
             if (line->content[1]->getText().isEmpty())
                 return;
 
@@ -669,7 +669,7 @@ QString ChatLog::getSelectedText() const
 
 bool ChatLog::isEmpty() const
 {
-    return renderedLineStorage->empty();
+    return chatLineStorage->empty();
 }
 
 bool ChatLog::hasTextToBeCopied() const
@@ -693,10 +693,10 @@ void ChatLog::clear()
 
     QVector<ChatLine::Ptr> savedLines;
 
-    for (auto it = renderedLineStorage->begin(); it != renderedLineStorage->end();) {
+    for (auto it = chatLineStorage->begin(); it != chatLineStorage->end();) {
         if (!isActiveFileTransfer(*it)) {
             (*it)->removeFromScene();
-            it = renderedLineStorage->erase(it);
+            it = chatLineStorage->erase(it);
         } else {
             it++;
         }
@@ -749,14 +749,14 @@ void ChatLog::scrollToLine(ChatLine::Ptr line)
 
 void ChatLog::selectAll()
 {
-    if (renderedLineStorage->empty())
+    if (chatLineStorage->empty())
         return;
 
     clearSelection();
 
     selectionMode = SelectionMode::Multi;
-    selFirstRow = renderedLineStorage->front();;
-    selLastRow = renderedLineStorage->back();
+    selFirstRow = chatLineStorage->front();;
+    selLastRow = chatLineStorage->back();
 
     emit selectionChanged();
     updateMultiSelectionRect();
@@ -764,7 +764,7 @@ void ChatLog::selectAll()
 
 void ChatLog::fontChanged(const QFont& font)
 {
-    for (ChatLine::Ptr l : *renderedLineStorage) {
+    for (ChatLine::Ptr l : *chatLineStorage) {
         l->fontChanged(font);
     }
 }
@@ -778,7 +778,7 @@ void ChatLog::reloadTheme()
     selGraphItem->setPen(QPen(selectionRectColor.darker(120)));
     setTypingNotification();
 
-    for (ChatLine::Ptr l : *renderedLineStorage) {
+    for (ChatLine::Ptr l : *chatLineStorage) {
         l->reloadTheme();
     }
 }
@@ -846,15 +846,15 @@ void ChatLog::handleSearchResult(SearchResult result, SearchDirection direction)
 
     searchPos = result.pos;
 
-    auto const firstRenderedIdx = (renderedLineStorage->hasIndexedMessage()) ? renderedLineStorage->firstIdx() : chatLog.getNextIdx();
+    auto const firstRenderedIdx = (chatLineStorage->hasIndexedMessage()) ? chatLineStorage->firstIdx() : chatLog.getNextIdx();
 
     auto selectText = [this, result] {
         // With fast changes our callback could become invalid, ensure that the
         // index we want to view is still actually visible
-        if (!renderedLineStorage->contains(searchPos.logIdx))
+        if (!chatLineStorage->contains(searchPos.logIdx))
             return;
 
-        auto msg = (*renderedLineStorage)[searchPos.logIdx];
+        auto msg = (*chatLineStorage)[searchPos.logIdx];
         scrollToLine(msg);
 
         auto text = qobject_cast<Text*>(msg->getContent(1));
@@ -864,7 +864,7 @@ void ChatLog::handleSearchResult(SearchResult result, SearchDirection direction)
     // If the requested element is visible the render completion callback will
     // not be called, we need to figure out which path we're going to take
     // before we take it.
-    if (renderedLineStorage->contains(searchPos.logIdx)) {
+    if (chatLineStorage->contains(searchPos.logIdx)) {
         jumpToIdx(searchPos.logIdx);
         selectText();
     } else {
@@ -881,18 +881,18 @@ void ChatLog::forceRelayout()
 
 void ChatLog::checkVisibility()
 {
-    if (renderedLineStorage->empty())
+    if (chatLineStorage->empty())
         return;
 
     // find first visible line
-    auto lowerBound = std::lower_bound(renderedLineStorage->begin(), renderedLineStorage->end(), getVisibleRect().top(),
+    auto lowerBound = std::lower_bound(chatLineStorage->begin(), chatLineStorage->end(), getVisibleRect().top(),
                                        ChatLine::lessThanBSRectBottom);
 
     // find last visible line
-    auto upperBound = std::lower_bound(lowerBound, renderedLineStorage->end(), getVisibleRect().bottom(),
+    auto upperBound = std::lower_bound(lowerBound, chatLineStorage->end(), getVisibleRect().bottom(),
                                        ChatLine::lessThanBSRectTop);
 
-    const ChatLine::Ptr lastLineBeforeVisible = lowerBound == renderedLineStorage->begin()
+    const ChatLine::Ptr lastLineBeforeVisible = lowerBound == chatLineStorage->begin()
         ? ChatLine::Ptr()
         : *std::prev(lowerBound);
 
@@ -966,8 +966,8 @@ void ChatLog::updateTypingNotification()
 
     qreal posY = 0.0;
 
-    if (!renderedLineStorage->empty())
-        posY = renderedLineStorage->back()->sceneBoundingRect().bottom() + lineSpacing;
+    if (!chatLineStorage->empty())
+        posY = chatLineStorage->back()->sceneBoundingRect().bottom() + lineSpacing;
 
     notification->layout(useableWidth(), QPointF(0.0, posY));
 }
@@ -981,9 +981,9 @@ void ChatLog::updateBusyNotification()
 
 ChatLine::Ptr ChatLog::findLineByPosY(qreal yPos) const
 {
-    auto itr = std::lower_bound(renderedLineStorage->begin(), renderedLineStorage->end(), yPos, ChatLine::lessThanBSRectBottom);
+    auto itr = std::lower_bound(chatLineStorage->begin(), chatLineStorage->end(), yPos, ChatLine::lessThanBSRectBottom);
 
-    if (itr != renderedLineStorage->end())
+    if (itr != chatLineStorage->end())
         return *itr;
 
     return ChatLine::Ptr();
@@ -991,32 +991,32 @@ ChatLine::Ptr ChatLog::findLineByPosY(qreal yPos) const
 
 void ChatLog::removeLines(ChatLogIdx begin, ChatLogIdx end)
 {
-    if (!renderedLineStorage->hasIndexedMessage()) {
+    if (!chatLineStorage->hasIndexedMessage()) {
         // No indexed lines to remove
         return;
     }
 
-    begin = clamp<ChatLogIdx>(begin, renderedLineStorage->firstIdx(), renderedLineStorage->lastIdx());
-    end = clamp<ChatLogIdx>(end, renderedLineStorage->firstIdx(), renderedLineStorage->lastIdx()) + 1;
+    begin = clamp<ChatLogIdx>(begin, chatLineStorage->firstIdx(), chatLineStorage->lastIdx());
+    end = clamp<ChatLogIdx>(end, chatLineStorage->firstIdx(), chatLineStorage->lastIdx()) + 1;
 
     // NOTE: Optimization potential if this find proves to be too expensive.
     // Batching all our erases into one call would be more efficient
-    for (auto it = renderedLineStorage->find(begin); it != renderedLineStorage->find(end);) {
+    for (auto it = chatLineStorage->find(begin); it != chatLineStorage->find(end);) {
         (*it)->removeFromScene();
-        it = renderedLineStorage->erase(it);
+        it = chatLineStorage->erase(it);
     }
 
     // We need to re-layout anything that is after any line we removed. We could
     // probably be smarter and try to only re-render anything under what we
     // removed, but with the sliding window there doesn't seem to be much need
-    if (renderedLineStorage->hasIndexedMessage() && begin <= renderedLineStorage->lastIdx()) {
-        layout(0, renderedLineStorage->size(), useableWidth());
+    if (chatLineStorage->hasIndexedMessage() && begin <= chatLineStorage->lastIdx()) {
+        layout(0, chatLineStorage->size(), useableWidth());
     }
 }
 
 QRectF ChatLog::calculateSceneRect() const
 {
-    qreal bottom = (renderedLineStorage->empty() ? 0.0 : renderedLineStorage->back()->sceneBoundingRect().bottom());
+    qreal bottom = (chatLineStorage->empty() ? 0.0 : chatLineStorage->back()->sceneBoundingRect().bottom());
 
     if (typingNotification.get() != nullptr)
         bottom += typingNotification->sceneBoundingRect().height() + lineSpacing;
@@ -1051,7 +1051,7 @@ void ChatLog::onWorkerTimeout()
     workerLastIndex += stepSize;
 
     // done?
-    if (workerLastIndex >= renderedLineStorage->size()) {
+    if (workerLastIndex >= chatLineStorage->size()) {
         workerTimer->stop();
 
         // switch back to the scene containing the chat messages
@@ -1098,8 +1098,8 @@ void ChatLog::onMessageUpdated(ChatLogIdx idx)
         // This can cause us to go over our max window size, however when we
         // scroll back down the window size should be clipped anyways
 
-        if (renderedLineStorage->size() > maxWindowSize) {
-            removeLines(renderedLineStorage->firstIdx(), renderedLineStorage->firstIdx() + windowChunkSize);
+        if (chatLineStorage->size() > maxWindowSize) {
+            removeLines(chatLineStorage->firstIdx(), chatLineStorage->firstIdx() + windowChunkSize);
             startResizeWorker();
         }
     }
@@ -1115,10 +1115,10 @@ void ChatLog::renderMessages(ChatLogIdx begin, ChatLogIdx end)
     auto linesToRender = std::map<ChatLogIdx, ChatLine::Ptr>();
 
     for (auto i = begin; i < end; ++i) {
-        bool alreadyRendered = renderedLineStorage->contains(i);
-        bool prevIdxRendered = i != begin || renderedLineStorage->contains(i - 1);
+        bool alreadyRendered = chatLineStorage->contains(i);
+        bool prevIdxRendered = i != begin || chatLineStorage->contains(i - 1);
 
-        auto chatMessage = alreadyRendered ? (*renderedLineStorage)[i] : ChatLine::Ptr();
+        auto chatMessage = alreadyRendered ? (*chatLineStorage)[i] : ChatLine::Ptr();
         renderItem(chatLog.at(i), needsToHideName(i, prevIdxRendered), colorizeNames, chatMessage);
 
         if (!alreadyRendered) {
@@ -1140,9 +1140,9 @@ void ChatLog::setRenderedWindowStart(ChatLogIdx begin)
     ChatLogIdx currentStart = ChatLogIdx(-1);
     ChatLogIdx currentEnd = ChatLogIdx(-1);
 
-    if (renderedLineStorage->hasIndexedMessage()) {
-        currentStart = renderedLineStorage->firstIdx();
-        currentEnd = renderedLineStorage->lastIdx() + 1;
+    if (chatLineStorage->hasIndexedMessage()) {
+        currentStart = chatLineStorage->firstIdx();
+        currentEnd = chatLineStorage->lastIdx() + 1;
     }
 
     // If the window is already where we have no work to do
@@ -1198,9 +1198,9 @@ void ChatLog::onRenderFinished()
     // invalidated. This could be improved in the future but for now I  do not
     // believe this is a serious usage impediment. Chats can be exported if a
     // user really needs more than 300 messages to be copied
-    if (renderedLineStorage->find(selFirstRow) == renderedLineStorage->end() ||
-        renderedLineStorage->find(selLastRow) == renderedLineStorage->end() ||
-        renderedLineStorage->find(selClickedRow) == renderedLineStorage->end())
+    if (chatLineStorage->find(selFirstRow) == chatLineStorage->end() ||
+        chatLineStorage->find(selLastRow) == chatLineStorage->end() ||
+        chatLineStorage->find(selClickedRow) == chatLineStorage->end())
     {
         clearSelection();
     }
@@ -1208,7 +1208,7 @@ void ChatLog::onRenderFinished()
 
 void ChatLog::onScrollValueChanged(int value)
 {
-    if (!renderedLineStorage->hasIndexedMessage()) {
+    if (!chatLineStorage->hasIndexedMessage()) {
         // This could be a little better. On a cleared screen we should probably
         // be able to scroll, but this makes the rest of this function easier
         return;
@@ -1216,10 +1216,10 @@ void ChatLog::onScrollValueChanged(int value)
 
     if (value == verticalScrollBar()->minimum())
     {
-        auto idx = clampedAdd(renderedLineStorage->firstIdx(), -static_cast<int>(windowChunkSize), chatLog);
+        auto idx = clampedAdd(chatLineStorage->firstIdx(), -static_cast<int>(windowChunkSize), chatLog);
 
-        if (idx != renderedLineStorage->firstIdx()) {
-            auto currentTop = (*renderedLineStorage)[renderedLineStorage->firstIdx()];
+        if (idx != chatLineStorage->firstIdx()) {
+            auto currentTop = (*chatLineStorage)[chatLineStorage->firstIdx()];
 
             renderCompletionFns.push_back([this, currentTop] {
                 scrollToLine(currentTop);
@@ -1231,14 +1231,14 @@ void ChatLog::onScrollValueChanged(int value)
     }
     else if (value == verticalScrollBar()->maximum())
     {
-        auto idx = clampedAdd(renderedLineStorage->lastIdx(), static_cast<int>(windowChunkSize), chatLog);
+        auto idx = clampedAdd(chatLineStorage->lastIdx(), static_cast<int>(windowChunkSize), chatLog);
 
-        if (idx != renderedLineStorage->lastIdx() + 1) {
-            auto currentBottomIdx = renderedLineStorage->lastIdx();
+        if (idx != chatLineStorage->lastIdx() + 1) {
+            auto currentBottomIdx = chatLineStorage->lastIdx();
 
             renderCompletionFns.push_back([this, currentBottomIdx] {
-                auto it = renderedLineStorage->find(currentBottomIdx);
-                if (it != renderedLineStorage->end()) {
+                auto it = chatLineStorage->find(currentBottomIdx);
+                if (it != chatLineStorage->end()) {
                     scrollToLine(*it);
                 }
             });
@@ -1288,14 +1288,14 @@ void ChatLog::focusInEvent(QFocusEvent* ev)
     if (selectionMode != SelectionMode::None) {
         selGraphItem->setBrush(QBrush(selectionRectColor));
 
-        auto endIt = renderedLineStorage->find(selLastRow);
+        auto endIt = chatLineStorage->find(selLastRow);
         // Increase by one since this selLastRow is inclusive, not exclusive
         // like our loop expects
-        if (endIt != renderedLineStorage->end()) {
+        if (endIt != chatLineStorage->end()) {
             endIt++;
         }
 
-        for (auto it = renderedLineStorage->begin(); it != renderedLineStorage->end() && it != endIt; ++it)
+        for (auto it = chatLineStorage->begin(); it != chatLineStorage->end() && it != endIt; ++it)
             (*it)->selectionFocusChanged(true);
     }
 }
@@ -1307,14 +1307,14 @@ void ChatLog::focusOutEvent(QFocusEvent* ev)
     if (selectionMode != SelectionMode::None) {
         selGraphItem->setBrush(QBrush(selectionRectColor.lighter(120)));
 
-        auto endIt = renderedLineStorage->find(selLastRow);
+        auto endIt = chatLineStorage->find(selLastRow);
         // Increase by one since this selLastRow is inclusive, not exclusive
         // like our loop expects
-        if (endIt != renderedLineStorage->end()) {
+        if (endIt != chatLineStorage->end()) {
             endIt++;
         }
 
-        for (auto it = renderedLineStorage->begin(); it != renderedLineStorage->end() && it != endIt; ++it)
+        for (auto it = chatLineStorage->begin(); it != chatLineStorage->end() && it != endIt; ++it)
             (*it)->selectionFocusChanged(false);
     }
 }
@@ -1444,19 +1444,19 @@ bool ChatLog::needsToHideName(ChatLogIdx idx, bool prevIdxRendered) const
 
 bool ChatLog::shouldRenderMessage(ChatLogIdx idx) const
 {
-    return renderedLineStorage->contains(idx) ||
+    return chatLineStorage->contains(idx) ||
         (
-            renderedLineStorage->contains(idx - 1) && idx + 1 == chatLog.getNextIdx()
-        ) || renderedLineStorage->empty();
+            chatLineStorage->contains(idx - 1) && idx + 1 == chatLog.getNextIdx()
+        ) || chatLineStorage->empty();
 }
 
 void ChatLog::disableSearchText()
 {
-    if (!renderedLineStorage->contains(searchPos.logIdx)) {
+    if (!chatLineStorage->contains(searchPos.logIdx)) {
         return;
     }
 
-    auto line = (*renderedLineStorage)[searchPos.logIdx];
+    auto line = (*chatLineStorage)[searchPos.logIdx];
     auto text = qobject_cast<Text*>(line->getContent(1));
     text->deselectText();
 }
@@ -1477,23 +1477,23 @@ void ChatLog::jumpToIdx(ChatLogIdx idx)
         idx = chatLog.getNextIdx() - 1;
     }
 
-    if (renderedLineStorage->contains(idx)) {
-        scrollToLine((*renderedLineStorage)[idx]);
+    if (chatLineStorage->contains(idx)) {
+        scrollToLine((*chatLineStorage)[idx]);
         return;
     }
 
     // If the requested idx is not currently rendered we need to request a
     // render and jump to the requested line after the render completes
     renderCompletionFns.push_back([this, idx] {
-        if (renderedLineStorage->contains(idx)) {
-            scrollToLine((*renderedLineStorage)[idx]);
+        if (chatLineStorage->contains(idx)) {
+            scrollToLine((*chatLineStorage)[idx]);
         }
     });
 
     // If the chatlog is empty it's likely the user has just cleared. In this
     // case it makes more sense to present the jump as if we're coming from the
     // bottom
-    if (renderedLineStorage->hasIndexedMessage() && idx > renderedLineStorage->lastIdx()) {
+    if (chatLineStorage->hasIndexedMessage() && idx > chatLineStorage->lastIdx()) {
         setRenderedWindowEnd(idx);
     }
     else {
